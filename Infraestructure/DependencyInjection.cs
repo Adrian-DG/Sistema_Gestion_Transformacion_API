@@ -15,14 +15,14 @@ namespace Infraestructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfraestructure(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddInfraestructureServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<MainContext>(options => {
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
                 options.EnableSensitiveDataLogging();
                 options.EnableDetailedErrors();
                 options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-                options.AddInterceptors(new AuditableInterceptor(0));
+                options.AddInterceptors(new AuditableInterceptor(null));
             });
 
             services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
