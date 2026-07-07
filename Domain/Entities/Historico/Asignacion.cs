@@ -23,9 +23,9 @@ namespace Domain.Entities.Historico
         public virtual ICollection<Adjunto>? Adjuntos { get; set; }
 
         public DateTime CreatedAt { get; set; }
-        public int CreatedBy { get; set; }
+        public Guid CreatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public int UpdatedBy { get; set; }
+        public Guid UpdatedBy { get; set; }
 
 
         public void SetAsignacion(Guid vehiculoId, Guid personaId)
