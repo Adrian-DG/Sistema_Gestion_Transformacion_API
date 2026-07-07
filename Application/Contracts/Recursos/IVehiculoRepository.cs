@@ -12,5 +12,6 @@ namespace Application.Contracts.Recursos
     {
         Task Create(Vehiculo vehiculo, CancellationToken cancellationToken);
         Task<PagedData<VehiculoViewModel>> Get(PaginationFilterQuery<VehiculoViewModel> filter, CancellationToken cancellationToken);
+        Task<Vehiculo> GetById(Guid id, CancellationToken cancellationToken);
     }
 }

@@ -45,5 +45,15 @@ namespace Infraestructure.Repositories.Recursos
             return new PagedData<VehiculoViewModel>(result, filter.PageSize, filter.PageNumber);
 
         }
+        public async Task<Vehiculo> GetById(Guid id, CancellationToken cancellationToken)
+        {
+            return await context.Vehiculos.FindAsync(id, cancellationToken) 
+                ?? throw new KeyNotFoundException($"Vehiculo with id {id} not found.");
+        }
+        public async Task Update(Vehiculo vehiculo, CancellationToken cancellationToken)
+        {
+            context.Vehiculos.Update(vehiculo);
+            await context.SaveChangesAsync(cancellationToken);
+        }
     }
 }

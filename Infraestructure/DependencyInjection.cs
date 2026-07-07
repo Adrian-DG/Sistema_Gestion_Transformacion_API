@@ -2,6 +2,7 @@
 using Application.Contracts.Recursos;
 using Infraestructure.Data;
 using Infraestructure.Identity.Authentication;
+using Infraestructure.Interceptors;
 using Infraestructure.Repositories.Recursos;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -16,7 +17,13 @@ namespace Infraestructure
     {
         public static IServiceCollection AddInfraestructure(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<MainContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<MainContext>(options => {
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+                options.EnableSensitiveDataLogging();
+                options.EnableDetailedErrors();
+                options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+                options.AddInterceptors(new AuditableInterceptor(0));
+            });
 
             services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();

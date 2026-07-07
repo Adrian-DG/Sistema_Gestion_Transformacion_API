@@ -45,7 +45,7 @@ public class CreateVehiculoCommandHandler(IUnitOfWork uow, IMapper mapper) : IRe
     public async Task<Unit> Handle(CreateVehiculoCommand request, CancellationToken cancellationToken)
     {
         var vehiculo = mapper.Map<Domain.Entities.Recursos.Vehiculo>(request);
-        await uow.VehiculoRepository.Create(vehiculo);
+        await uow.VehiculoRepository.Create(vehiculo, cancellationToken);
         return Unit.Value;
     }
 }
