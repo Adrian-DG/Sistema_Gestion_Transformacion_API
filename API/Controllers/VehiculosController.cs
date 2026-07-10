@@ -15,14 +15,15 @@ namespace API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateVehiculoCommand command, CancellationToken cancellationToken)
         {
-            await _mediator.Send(command, cancellationToken);
-            return Ok();
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.IsSuccess ? Ok() : HandleFailure(result);
         }
 
         [HttpGet]
-        public async Task<PagedData<VehiculoViewModel>> Get([FromQuery] PaginationFilterQuery<VehiculoViewModel> query, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromQuery] PaginationFilterQuery<VehiculoViewModel> query, CancellationToken cancellationToken)
         {
-            return await _mediator.Send(query, cancellationToken);
+            var result = await _mediator.Send(query, cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Features.Vehiculo;
+using Domain.Common;
 using Domain.Entities.Recursos;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,6 @@ namespace Application.Contracts.Recursos
     {
         Task Create(Vehiculo vehiculo, CancellationToken cancellationToken);
         Task<PagedData<VehiculoViewModel>> Get(PaginationFilterQuery<VehiculoViewModel> filter, CancellationToken cancellationToken);
-        Task<Vehiculo> GetById(Guid id, CancellationToken cancellationToken);
+        Task<Result<Vehiculo>> GetById(Guid id, CancellationToken cancellationToken);
     }
 }

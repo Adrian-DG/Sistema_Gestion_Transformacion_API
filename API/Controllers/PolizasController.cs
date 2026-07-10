@@ -1,7 +1,5 @@
 using API.Security;
 using Application.Common.DTO;
-using Application.Common.Response;
-using Application.Common.ViewModels;
 using Application.Features.Historico.Polizas;
 using Application.Security;
 using MediatR;
@@ -14,16 +12,17 @@ namespace API.Controllers
     public class PolizasController(IMediator mediator) : ApiControllerBase(mediator)
     {
         [HttpPost]
-        public async Task<ActionResult<Guid>> Create([FromBody] CreatePolizaCommand command, CancellationToken cancellationToken)
+        public async Task<IActionResult> Create([FromBody] CreatePolizaCommand command, CancellationToken cancellationToken)
         {
-            var id = await _mediator.Send(command, cancellationToken);
-            return Ok(id);
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
         }
 
         [HttpGet]
-        public async Task<PagedData<PolizaViewModel>> Get([FromQuery] PaginationFilterQuery<PolizaViewModel> query, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromQuery] PaginationFilterQuery<PolizaViewModel> query, CancellationToken cancellationToken)
         {
-            return await _mediator.Send(query, cancellationToken);
+            var result = await _mediator.Send(query, cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
         }
     }
 }

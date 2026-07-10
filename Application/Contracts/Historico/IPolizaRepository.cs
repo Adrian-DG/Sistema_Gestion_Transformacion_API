@@ -1,6 +1,9 @@
+
+
 using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Features.Historico.Polizas;
+using Domain.Common;
 using Domain.Entities.Historico;
 
 namespace Application.Contracts.Historico
@@ -9,6 +12,6 @@ namespace Application.Contracts.Historico
     {
         Task Create(Poliza poliza, CancellationToken cancellationToken);
         Task<PagedData<PolizaViewModel>> Get(PaginationFilterQuery<PolizaViewModel> filter, CancellationToken cancellationToken);
-        Task<Poliza?> GetById(Guid id, CancellationToken cancellationToken);
+        Task<Result<Poliza>> GetById(Guid id, CancellationToken cancellationToken);
     }
 }

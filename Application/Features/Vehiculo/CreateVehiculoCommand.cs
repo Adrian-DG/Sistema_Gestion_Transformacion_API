@@ -1,4 +1,5 @@
 ﻿using Application.Contracts;
+using Domain.Common;
 using FluentValidation;
 using MediatR;
 
@@ -13,30 +14,43 @@ public record CreateVehiculoCommand(
     Guid ModeloId,
     Guid TipoId,
     Guid ColorId
-) : IRequest<Unit>;
+) : IRequest<Result>;
 
 public class CreateVehiculoCommandValidator : AbstractValidator<CreateVehiculoCommand>
 {
     public CreateVehiculoCommandValidator()
     {
-        RuleFor(x => x.Chasis).NotEmpty().WithMessage("El chasis es obligatorio.");
-        RuleFor(x => x.Matricula).NotEmpty().WithMessage("La matrícula es obligatoria.");
+        RuleFor(x => x.Chasis)
+            .NotEmpty().WithMessage("El chasis es obligatorio.");
+
+        RuleFor(x => x.Matricula)
+            .NotEmpty().WithMessage("La matrícula es obligatoria.");
 
         RuleFor(x => x.Placa)
-            .Must(x => !string.IsNullOrWhiteSpace(x) && x.Length <= 10)
-            .WithMessage("La placa es obligatoria y debe tener un máximo de 10 caracteres.");
+            .NotEmpty().WithMessage("La placa es obligatoria.")
+            .MaximumLength(10).WithMessage("La placa debe tener un máximo de 10 caracteres.");
 
-        RuleFor(x => x.Fabricacion).GreaterThan(0).WithMessage("El año de fabricación debe ser mayor que cero.");
-        RuleFor(x => x.MarcaId).NotEmpty().WithMessage("La marca es obligatoria.");
-        RuleFor(x => x.ModeloId).NotEmpty().WithMessage("El modelo es obligatorio.");
-        RuleFor(x => x.TipoId).NotEmpty().WithMessage("El tipo de vehículo es obligatorio.");
-        RuleFor(x => x.ColorId).NotEmpty().WithMessage("El color es obligatorio.");
+        RuleFor(x => x.Fabricacion)
+            .InclusiveBetween(1900, DateTime.Now.Year + 1)
+            .WithMessage($"El año de fabricación debe estar entre 1900 y {DateTime.Now.Year + 1}.");
+
+        RuleFor(x => x.MarcaId)
+            .NotEmpty().WithMessage("La marca es obligatoria.");
+
+        RuleFor(x => x.ModeloId)
+            .NotEmpty().WithMessage("El modelo es obligatorio.");
+
+        RuleFor(x => x.TipoId)
+            .NotEmpty().WithMessage("El tipo de vehículo es obligatorio.");
+
+        RuleFor(x => x.ColorId)
+            .NotEmpty().WithMessage("El color es obligatorio.");
     }
 }
 
-public class CreateVehiculoCommandHandler(IUnitOfWork uow) : IRequestHandler<CreateVehiculoCommand, Unit>
+public class CreateVehiculoCommandHandler(IUnitOfWork uow) : IRequestHandler<CreateVehiculoCommand, Result>
 {
-    public async Task<Unit> Handle(CreateVehiculoCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(CreateVehiculoCommand request, CancellationToken cancellationToken)
     {
         var vehiculo = new Domain.Entities.Recursos.Vehiculo
         {
@@ -53,6 +67,6 @@ public class CreateVehiculoCommandHandler(IUnitOfWork uow) : IRequestHandler<Cre
 
         await uow.VehiculoRepository.Create(vehiculo, cancellationToken);
         await uow.SaveChangesAsync(cancellationToken);
-        return Unit.Value;
+        return Result.Success();
     }
 }

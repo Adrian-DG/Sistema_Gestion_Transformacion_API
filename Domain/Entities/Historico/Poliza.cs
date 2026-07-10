@@ -1,4 +1,5 @@
 ﻿using Domain.Abstraction;
+using Domain.Entities.Misc;
 using Domain.Entities.Recursos;
 using System;
 using System.Collections.Generic;
@@ -8,12 +9,16 @@ namespace Domain.Entities.Historico
 {
     public class Poliza : BaseEntityMetadata, IAuditableEntityMetadata
     {
+        public required string Numero { get; set; }
         public DateOnly FechaExpedicion { get; set; }
         public DateOnly FechaEfectividad { get; set; }
         public DateOnly FechaVencimiento { get; set; }
 
         public Guid VehiculoId { get; set; }
         public virtual Vehiculo? Vehiculo { get; set; }
+
+        public Guid AseguradoraId { get; set; }
+        public virtual Aseguradora? Aseguradora { get; set; }
 
         public DateTime CreatedAt { get; set; }
         public Guid CreatedBy { get; set; }

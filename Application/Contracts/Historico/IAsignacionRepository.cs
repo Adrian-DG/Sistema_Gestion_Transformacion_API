@@ -1,6 +1,7 @@
 using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Features.Historico.Asignaciones;
+using Domain.Common;
 using Domain.Entities.Historico;
 
 namespace Application.Contracts.Historico
@@ -9,6 +10,6 @@ namespace Application.Contracts.Historico
     {
         Task Create(Asignacion asignacion, CancellationToken cancellationToken);
         Task<PagedData<AsignacionViewModel>> Get(PaginationFilterQuery<AsignacionViewModel> filter, CancellationToken cancellationToken);
-        Task<Asignacion?> GetById(Guid id, CancellationToken cancellationToken);
+        Task<Result<Asignacion>> GetById(Guid id, CancellationToken cancellationToken);
     }
 }

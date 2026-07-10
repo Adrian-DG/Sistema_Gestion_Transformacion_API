@@ -1,8 +1,8 @@
-using Application.Common.ViewModels;
+using Application.Features.Historico.Polizas;
 using AutoMapper;
 using Domain.Entities.Historico;
 
-namespace Application.Common.Profiles;
+namespace Application.Features.Historico.Polizas.Profiles;
 
 public class HistoricoMappingProfile : Profile
 {

@@ -1,4 +1,6 @@
 using Application.Contracts;
+using Domain.Common;
+using Domain.Common.Errors;
 using Domain.Entities.Historico;
 using Domain.Enums;
 using FluentValidation;
@@ -14,7 +16,7 @@ public record CreateAsignacionCommand(
     DateOnly FechaEfectividad,
     string Motivo,
     List<CreateAdjuntoRequest> Adjuntos
-) : IRequest<Guid>;
+) : IRequest<Result<Guid>>;
 
 public class CreateAsignacionCommandValidator : AbstractValidator<CreateAsignacionCommand>
 {
@@ -23,20 +25,29 @@ public class CreateAsignacionCommandValidator : AbstractValidator<CreateAsignaci
         RuleFor(x => x.PersonaId).NotEmpty();
         RuleFor(x => x.VehiculoId).NotEmpty();
         RuleFor(x => x.Motivo).NotEmpty().MaximumLength(500);
-        RuleFor(x => x.Adjuntos).NotNull().Must(x => x.Count > 0)
+        RuleFor(x => x.Adjuntos)
+            .NotNull()
+            .NotEmpty()
             .WithMessage("Debe adjuntar al menos un documento para registrar la asignación.");
     }
 }
 
-public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateAsignacionCommand, Guid>
+public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateAsignacionCommand, Result<Guid>>
 {
-    public async Task<Guid> Handle(CreateAsignacionCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(CreateAsignacionCommand request, CancellationToken cancellationToken)
     {
-        var vehiculo = await unitOfWork.VehiculoRepository.GetById(request.VehiculoId, cancellationToken);
+        var vehiculoResult = await unitOfWork.VehiculoRepository.GetById(request.VehiculoId, cancellationToken);
+
+        if (vehiculoResult.IsFailure)
+        {
+            return Result.Failure<Guid>(vehiculoResult.Error);
+        }
+
+        var vehiculo = vehiculoResult.Value;
 
         if (!vehiculo.Disponible)
         {
-            throw new InvalidOperationException("El vehículo seleccionado no está disponible para asignación.");
+            return Result.Failure<Guid>(VehiculoErrors.NotAvailable(vehiculo.Id));
         }
 
         var asignacion = new Asignacion

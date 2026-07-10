@@ -1,19 +1,20 @@
 using Application.Contracts.Misc;
 using Application.Features.Misc.ViewModels;
 using AutoMapper;
+using Domain.Common;
 using Domain.Entities.Misc;
 using MediatR;
 
 namespace Application.Features.Misc;
 
-public record GetTipoDocumentosQuery : IRequest<IReadOnlyList<CatalogItemViewModel>>;
+public record GetTipoDocumentosQuery : IRequest<Result<IReadOnlyList<CatalogItemViewModel>>>;
 
 public class GetTipoDocumentosQueryHandler(ICatalogRepository<TipoDocumento> repository, IMapper mapper)
-    : IRequestHandler<GetTipoDocumentosQuery, IReadOnlyList<CatalogItemViewModel>>
+    : IRequestHandler<GetTipoDocumentosQuery, Result<IReadOnlyList<CatalogItemViewModel>>>
 {
-    public async Task<IReadOnlyList<CatalogItemViewModel>> Handle(GetTipoDocumentosQuery request, CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<CatalogItemViewModel>>> Handle(GetTipoDocumentosQuery request, CancellationToken cancellationToken)
     {
         var data = await repository.GetAllAsync(cancellationToken);
-        return mapper.Map<List<CatalogItemViewModel>>(data);
+        return Result.Success<IReadOnlyList<CatalogItemViewModel>>(mapper.Map<List<CatalogItemViewModel>>(data));
     }
 }

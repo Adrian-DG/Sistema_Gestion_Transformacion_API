@@ -32,5 +32,10 @@ namespace Domain.Entities.Recursos
         public DateTime UpdatedAt { get; set; }
         public Guid UpdatedBy { get; set; }
 
+        public override string ToString()
+        {
+            return $"{Matricula} | {Marca.Nombre} | {Modelo.Nombre}";
+        }
+
     }
 }

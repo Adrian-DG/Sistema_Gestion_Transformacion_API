@@ -2,7 +2,7 @@ using Application.Features.Misc.ViewModels;
 using AutoMapper;
 using Domain.Entities.Misc;
 
-namespace Application.Features.Misc;
+namespace Application.Features.Misc.Profiles;
 
 public class MiscMappingProfile : Profile
 {

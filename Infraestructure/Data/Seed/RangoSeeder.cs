@@ -13,16 +13,16 @@ namespace Infraestructure.Data.Seed
         {
             var rangos = new List<Rango>
             {
-                new Rango { Nombre = "Teniente General", NombreArmada = "" },
-                new Rango { Nombre = "Mayor General", NombreArmada = "" },
-                new Rango { Nombre = "General de Brigada", NombreArmada = "" },
-                new Rango { Nombre = "Coronel", NombreArmada = "" },
-                new Rango { Nombre = "Teniente Coronel", NombreArmada = "" },
-                new Rango { Nombre = "Mayor", NombreArmada = "" },
-                new Rango { Nombre = "Capitán", NombreArmada = "" },
-                new Rango { Nombre = "Primer Teniente", NombreArmada = "" },
-                new Rango { Nombre = "Segundo Teniente", NombreArmada = "" },
-                new Rango { Nombre = "Subteniente", NombreArmada = "" }
+                new Rango { Id = Guid.NewGuid(), Nombre = "Teniente General", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "Mayor General", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "General de Brigada", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "Coronel", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "Teniente Coronel", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "Mayor", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "Capitán", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "Primer Teniente", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "Segundo Teniente", NombreArmada = "" },
+                new Rango { Id = Guid.NewGuid(), Nombre = "Subteniente", NombreArmada = "" }
             };
 
             builder.Entity<Rango>().HasData(rangos);

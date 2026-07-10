@@ -2,6 +2,7 @@
 using Application.Common.Response;
 using Application.Contracts;
 using AutoMapper;
+using Domain.Common;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -22,11 +23,12 @@ public class VehiculoViewModel
     public required string Color { get; set; }
 }
 
-public class GetVehiculosQuery(IUnitOfWork uow) : IRequestHandler<PaginationFilterQuery<VehiculoViewModel>, PagedData<VehiculoViewModel>>
+public class GetVehiculosQuery(IUnitOfWork uow) : IRequestHandler<PaginationFilterQuery<VehiculoViewModel>, Result<PagedData<VehiculoViewModel>>>
 {
-    public async Task<PagedData<VehiculoViewModel>> Handle(PaginationFilterQuery<VehiculoViewModel> request, CancellationToken cancellationToken)
+    public async Task<Result<PagedData<VehiculoViewModel>>> Handle(PaginationFilterQuery<VehiculoViewModel> request, CancellationToken cancellationToken)
     {
-        return await uow.VehiculoRepository.Get(request, cancellationToken);
+        var data = await uow.VehiculoRepository.Get(request, cancellationToken);
+        return Result.Success(data);
     }
 }
 

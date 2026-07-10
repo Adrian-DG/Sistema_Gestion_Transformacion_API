@@ -1,7 +1,9 @@
 using Application.Common.DTO;
 using Application.Common.Response;
-using Application.Common.ViewModels;
 using Application.Contracts.Historico;
+using Application.Features.Historico.Asignaciones;
+using Domain.Common;
+using Domain.Common.Errors;
 using Domain.Entities.Historico;
 using Infraestructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -43,11 +45,15 @@ namespace Infraestructure.Repositories.Historico
             return new PagedData<AsignacionViewModel>(rows, filter.PageSize, filter.PageNumber);
         }
 
-        public async Task<Asignacion?> GetById(Guid id, CancellationToken cancellationToken)
+        public async Task<Result<Asignacion>> GetById(Guid id, CancellationToken cancellationToken)
         {
-            return await context.Asignaciones
+            var asignacion = await context.Asignaciones
                 .Include(x => x.Adjuntos)
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+            return asignacion is not null
+                ? Result.Success(asignacion)
+                : Result.Failure<Asignacion>(AsignacionErrors.NotFound(id));
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Application.Common.Response;
+using Domain.Common;
 using FluentValidation;
 using MediatR;
 using System;
@@ -7,7 +8,7 @@ using System.Text;
 
 namespace Application.Common.DTO;
 
-public record PaginationFilterQuery<T> : IRequest<PagedData<T>> where T : class
+public record PaginationFilterQuery<T> : IRequest<Result<PagedData<T>>> where T : class
 {
     public int PageNumber { get; set; }
     public int PageSize { get; set; }
@@ -20,7 +21,7 @@ public record PaginationFilterQuery<T> : IRequest<PagedData<T>> where T : class
     }
 }
 
-public class PaginationFilterQueryValidator<T> : AbstractValidator<PaginationFilterQuery<T>> where T : class, new()
+public class PaginationFilterQueryValidator<T> : AbstractValidator<PaginationFilterQuery<T>> where T : class
 {
     public PaginationFilterQueryValidator()
     {
