@@ -1,43 +1,22 @@
 using API.Security;
+using Application.Contracts;
 using Application.Contracts.Authentication;
+using Application.Features.Authentication;
 using Domain.Common;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
-    [ApiController]
     [Route("api/authentication")]
-    public class AuthController(IAuthenticationRepository authenticationRepository) : ControllerBase
+    public class AuthController(IMediator mediator) : ApiControllerBase(mediator)
     {
-        [AllowAnonymous]
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        [HttpPost]
+        public async Task<IActionResult> Login([FromBody] LoginUserCommand command, CancellationToken cancellationToken)
         {
-            var result = await authenticationRepository.Login(request.UserName, request.Password);
-
-            if (result.IsFailure)
-            {
-                return MapErrorToResponse(result.Error);
-            }
-
-            return Ok(new LoginResponse(result.Value));
-        }
-
-        private IActionResult MapErrorToResponse(Error error)
-        {
-            return error.Type switch
-            {
-                ErrorType.NotFound => NotFound(new { error = error.Message, code = error.Code }),
-                ErrorType.Unauthorized => Unauthorized(new { error = error.Message, code = error.Code }),
-                ErrorType.Validation => BadRequest(new { error = error.Message, code = error.Code }),
-                ErrorType.Conflict => Conflict(new { error = error.Message, code = error.Code }),
-                ErrorType.Forbidden => Forbid(),
-                _ => StatusCode(500, new { error = error.Message, code = error.Code })
-            };
+            var result = await _mediator.Send(command, cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
         }
     }
-
-    public record LoginRequest(string UserName, string Password);
-    public record LoginResponse(string AccessToken);
 }
