@@ -1,5 +1,6 @@
 ﻿using Application.Constants;
 using Application.Contracts;
+using Application.Contracts.Authentication;
 using Application.Contracts.Historico;
 using Application.Contracts.Misc;
 using Application.Contracts.Recursos;
@@ -8,6 +9,7 @@ using Infraestructure.Data;
 using Infraestructure.Identity.Authentication;
 using Infraestructure.Identity.Models;
 using Infraestructure.Interceptors;
+using Infraestructure.Repositories.Authentication;
 using Infraestructure.Repositories.Historico;
 using Infraestructure.Repositories.Misc;
 using Infraestructure.Repositories.Recursos;
@@ -75,14 +77,23 @@ namespace Infraestructure
                     p => p.RequireRole(AppPermission.GestionPolizas.ToString(), AppPermission.Administrador.ToString()));
             });
 
-            services.AddMemoryCache();
-            services.AddScoped(typeof(ICatalogRepository<>), typeof(CatalogRepository<>));
+            services.AddMemoryCache();            
 
-            services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>(cfg =>
+            {
+                var context = cfg.GetRequiredService<MainContext>();
+                var userManager = cfg.GetRequiredService<UserManager<AppUser>>();
+                var signInManager = cfg.GetRequiredService<SignInManager<AppUser>>();
+                var tokenGenerator = cfg.GetRequiredService<IJwtTokenGenerator>();
+                return new UnitOfWork(context, userManager, signInManager, tokenGenerator);
+            });
+
+            services.AddScoped<IAuthenticationRepository, AuthenticationRepository>();
+            services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();   
             services.AddScoped<IVehiculoRepository, VehiculoRepository>();
             services.AddScoped<IAsignacionRepository, AsignacionRepository>();
             services.AddScoped<IPolizaRepository, PolizaRepository>();
+            services.AddScoped(typeof(ICatalogRepository<>), typeof(CatalogRepository<>));
 
             return services;
         }
