@@ -34,9 +34,11 @@ namespace Infraestructure.Data
 
             // Miscellaneous entities
             builder.Entity<Aseguradora>(e => e.ToTable("Aseguradoras", "misc"));
+            
             builder.Entity<Rango>(e => e.ToTable("Rangos", "misc"));
             builder.Entity<Modelo>(e => e.ToTable("Modelos", "misc"));
             builder.Entity<Marca>(e => e.ToTable("Marcas", "misc"));
+            
             builder.Entity<TipoDocumento>(e => e.ToTable("TipoDocumentos", "misc"));
             builder.Entity<TipoVehiculo>(e => e.ToTable("TipoVehiculos", "misc"));
             builder.Entity<TipoOperacion>(e => e.ToTable("TipoOperaciones", "misc"));
@@ -44,17 +46,35 @@ namespace Infraestructure.Data
             // Historical entities
             builder.Entity<Asignacion>(e => e.ToTable("Asignaciones", "historico"));
             builder.Entity<Adjunto>(e => e.ToTable("Adjuntos", "historico"));
-            builder.Entity<Poliza>(e => e.ToTable("Polizas", "historico"));
-            builder.Entity<Persona>(e => e.ToTable("Personas", "historico"));
+
+            builder.Entity<Poliza>(e =>
+            {
+                e.ToTable("Polizas", "historico");
+                e.HasIndex(p => p.Numero).IsUnique();
+            });
+
+            builder.Entity<Persona>(e =>
+            {
+                e.ToTable("Personas", "historico");
+                e.HasIndex(p => p.Identificacion).IsUnique();
+            });
 
             // Resource entities
-            builder.Entity<Vehiculo>(e => e.ToTable("Vehiculos", "recursos"));
+            builder.Entity<Vehiculo>(e =>
+            {
+                e.ToTable("Vehiculos", "recursos");
+                e.HasIndex(v => v.Placa).IsUnique();
+                e.HasIndex(v => v.Chasis).IsUnique();
+                e.HasIndex(v => v.Matricula).IsUnique();
+            });
 
 
             #endregion
 
             #region Seed Data
             RangoSeeder.Seed(builder);
+            var marcas = MarcaSeeder.Seed(builder);
+            ModeloSeeder.Seed(builder, marcas);
             #endregion
         }
 
