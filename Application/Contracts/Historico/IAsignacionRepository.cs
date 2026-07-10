@@ -1,6 +1,6 @@
 using Application.Common.DTO;
 using Application.Common.Response;
-using Application.Features.Historico.ViewModels;
+using Application.Features.Historico.Asignaciones;
 using Domain.Entities.Historico;
 
 namespace Application.Contracts.Historico

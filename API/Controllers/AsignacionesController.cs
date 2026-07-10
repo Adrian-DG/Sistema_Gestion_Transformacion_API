@@ -1,8 +1,8 @@
 using API.Security;
 using Application.Common.DTO;
 using Application.Common.Response;
-using Application.Features.Historico;
-using Application.Features.Historico.ViewModels;
+using Application.Common.ViewModels;
+using Application.Features.Historico.Asignaciones;
 using Application.Security;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;

@@ -1,11 +1,18 @@
 using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Contracts;
-using Application.Features.Historico.ViewModels;
 using AutoMapper;
 using MediatR;
 
-namespace Application.Features.Historico;
+namespace Application.Features.Historico.Polizas;
+public class PolizaViewModel
+{
+    public Guid Id { get; set; }
+    public Guid VehiculoId { get; set; }
+    public DateOnly FechaExpedicion { get; set; }
+    public DateOnly FechaEfectividad { get; set; }
+    public DateOnly FechaVencimiento { get; set; }
+}
 
 public class GetPolizasQuery(IUnitOfWork unitOfWork, IMapper mapper) : IRequestHandler<PaginationFilterQuery<PolizaViewModel>, PagedData<PolizaViewModel>>
 {

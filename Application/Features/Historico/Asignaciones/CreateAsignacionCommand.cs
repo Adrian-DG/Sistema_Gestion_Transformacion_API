@@ -4,7 +4,7 @@ using Domain.Enums;
 using FluentValidation;
 using MediatR;
 
-namespace Application.Features.Historico;
+namespace Application.Features.Historico.Asignaciones;
 
 public record CreateAdjuntoRequest(Guid TipoDocumentoId, Guid TipoOperacionId, string FileBase64);
 

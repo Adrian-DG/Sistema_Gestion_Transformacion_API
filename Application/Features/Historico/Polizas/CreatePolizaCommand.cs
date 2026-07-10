@@ -3,7 +3,7 @@ using Domain.Entities.Historico;
 using FluentValidation;
 using MediatR;
 
-namespace Application.Features.Historico;
+namespace Application.Features.Historico.Polizas;
 
 public record CreatePolizaCommand(
     Guid VehiculoId,

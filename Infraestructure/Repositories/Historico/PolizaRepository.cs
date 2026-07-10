@@ -1,7 +1,7 @@
 using Application.Common.DTO;
 using Application.Common.Response;
+using Application.Common.ViewModels;
 using Application.Contracts.Historico;
-using Application.Features.Historico.ViewModels;
 using Domain.Entities.Historico;
 using Infraestructure.Data;
 using Microsoft.EntityFrameworkCore;
