@@ -19,10 +19,16 @@ namespace Infraestructure.Identity.Authentication
 
             var claims = new List<Claim>
             {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(JwtClaimConstants.USERNAME, user.UserName ?? string.Empty),
                 new Claim(JwtClaimConstants.INSTITUCION, $"{user.Institucion}"),
                 new Claim(JwtClaimConstants.Permissions, string.Join(",", permissions ?? Array.Empty<string>()))
             };
+
+            foreach (var permission in permissions ?? Array.Empty<string>())
+            {
+                claims.Add(new Claim(ClaimTypes.Role, permission));
+            }
 
             var token = new JwtSecurityToken(
                 issuer: configuration[JWTPropConstants.ISSUER],

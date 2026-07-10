@@ -1,43 +1,38 @@
-﻿using Domain.Abstraction;
-using Domain.Enums;
-using Microsoft.AspNetCore.SignalR;
+﻿using Application.Contracts;
+using Domain.Abstraction;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Infraestructure.Interceptors
 {
-    public class AuditableInterceptor : SaveChangesInterceptor
+    public class AuditableInterceptor(ICurrentUserService currentUserService) : SaveChangesInterceptor
     {
-        private readonly Guid? _userId;
-        public AuditableInterceptor(Guid? userId)
-        {
-            _userId = userId;
-        }
-
         public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
         {
             var context = eventData.Context;
 
             if (context is null) return base.SavingChanges(eventData, result);
-            
-            foreach (var entry in context.ChangeTracker.Entries())
+
+            var userId = currentUserService.UserId;
+
+            if (userId.HasValue)
             {
-                if (entry.Entity is IAuditableEntityMetadata auditableEntity && _userId.HasValue)
+                foreach (var entry in context.ChangeTracker.Entries())
                 {
-                    switch (entry.State)
+                    if (entry.Entity is IAuditableEntityMetadata auditableEntity)
                     {
-                        case EntityState.Added:
-                            auditableEntity.CreatedBy = _userId.Value;
-                            auditableEntity.CreatedAt = DateTime.UtcNow;
-                            break;
-                        case EntityState.Modified:
-                            auditableEntity.UpdatedBy = _userId.Value;
-                            auditableEntity.UpdatedAt = DateTime.UtcNow;
-                            break;
-                    }                    
+                        switch (entry.State)
+                        {
+                            case EntityState.Added:
+                                auditableEntity.CreatedBy = userId.Value;
+                                auditableEntity.CreatedAt = DateTime.UtcNow;
+                                break;
+                            case EntityState.Modified:
+                                auditableEntity.UpdatedBy = userId.Value;
+                                auditableEntity.UpdatedAt = DateTime.UtcNow;
+                                break;
+                        }
+                    }
                 }
             }
 

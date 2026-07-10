@@ -11,7 +11,7 @@ using System.Text;
 
 namespace Infraestructure.Data
 {
-    public class MainContext : IdentityDbContext<AppUser, AppPermission, Guid>
+    public class MainContext : IdentityDbContext<AppUser, AppRole, Guid>
     {
         public MainContext(DbContextOptions<MainContext> options) : base(options)
         {
@@ -30,7 +30,7 @@ namespace Infraestructure.Data
 
             // Identity entities
             builder.Entity<AppUser>(e => e.ToTable("Usuarios", "acceso"));
-            builder.Entity<AppPermission>(e => e.ToTable("Permisos", "acceso"));
+            builder.Entity<AppRole>(e => e.ToTable("Permisos", "acceso"));
 
             // Miscellaneous entities
             builder.Entity<Aseguradora>(e => e.ToTable("Aseguradoras", "misc"));

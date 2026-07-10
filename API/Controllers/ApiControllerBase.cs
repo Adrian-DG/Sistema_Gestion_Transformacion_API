@@ -6,13 +6,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers
 {
     [ApiController]
-    public class GenericRepository : ControllerBase
+    public abstract class ApiControllerBase : ControllerBase
     {
         protected readonly IMediator _mediator;
 
-        public GenericRepository(IMediator mediator)
+        protected ApiControllerBase(IMediator mediator)
         {
-            _mediator = mediator;   
+            _mediator = mediator;
         }
     }
 }

@@ -5,9 +5,6 @@ using Application.Features.Vehiculo;
 using Domain.Entities.Recursos;
 using Infraestructure.Data;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infraestructure.Repositories.Recursos
 {
@@ -15,9 +12,9 @@ namespace Infraestructure.Repositories.Recursos
     {
         public async Task Create(Vehiculo vehiculo, CancellationToken cancellationToken)
         {
-            await context.Vehiculos.AddAsync(vehiculo);
-            await context.SaveChangesAsync();
+            await context.Vehiculos.AddAsync(vehiculo, cancellationToken);
         }
+
         public async Task<PagedData<VehiculoViewModel>> Get(PaginationFilterQuery<VehiculoViewModel> filter, CancellationToken cancellationToken)
         {
             var query = context.Vehiculos.AsQueryable();
@@ -35,25 +32,19 @@ namespace Infraestructure.Repositories.Recursos
                     Id = v.Id,
                     Chasis = v.Chasis,
                     Placa = v.Placa,
-                    Marca = v.Marca.Nombre,
-                    Modelo = v.Modelo.Nombre,
+                    Marca = v.Marca!.Nombre,
+                    Modelo = v.Modelo!.Nombre,
                     Fabricacion = v.Fabricacion,
-                    Color = v.Color.Nombre
-                }).ToListAsync();
-               
+                    Color = v.Color!.Nombre
+                }).ToListAsync(cancellationToken);
 
             return new PagedData<VehiculoViewModel>(result, filter.PageSize, filter.PageNumber);
-
         }
+
         public async Task<Vehiculo> GetById(Guid id, CancellationToken cancellationToken)
         {
-            return await context.Vehiculos.FindAsync(id, cancellationToken) 
+            return await context.Vehiculos.FindAsync([id], cancellationToken)
                 ?? throw new KeyNotFoundException($"Vehiculo with id {id} not found.");
-        }
-        public async Task Update(Vehiculo vehiculo, CancellationToken cancellationToken)
-        {
-            context.Vehiculos.Update(vehiculo);
-            await context.SaveChangesAsync(cancellationToken);
         }
     }
 }
