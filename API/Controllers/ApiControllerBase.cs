@@ -17,25 +17,28 @@ namespace API.Controllers
             _mediator = mediator;
         }
 
-        protected IActionResult HandleFailure(Result result)
+        protected IActionResult HandleResult(Result result)
         {
             if (result.IsSuccess)
             {
-                throw new InvalidOperationException("HandleFailure no debe invocarse con un resultado exitoso.");
+                return Ok();
             }
 
-            if (result.Error is ValidationError validationError)
+            return HandleFailure(result);
+        }
+
+        protected IActionResult HandleResult<T>(Result<T> result)
+        {
+            if (result.IsSuccess)
             {
-                var modelState = new ModelStateDictionary();
-
-                foreach (var error in validationError.Errors)
-                {
-                    modelState.AddModelError(error.Code, error.Message);
-                }
-
-                return ValidationProblem(modelState);
+                return Ok(result.Value);
             }
 
+            return HandleFailure(result);
+        }
+
+        protected IActionResult HandleFailure(Result result)
+        {
             var statusCode = result.Error.Type switch
             {
                 ErrorType.NotFound => StatusCodes.Status404NotFound,

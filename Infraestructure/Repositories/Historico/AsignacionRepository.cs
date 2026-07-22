@@ -26,6 +26,8 @@ namespace Infraestructure.Repositories.Historico
                 query = query.Where(x => (x.Motivo ?? string.Empty).Contains(filter.Param));
             }
 
+            var totalRecords = await query.CountAsync(cancellationToken);
+
             var rows = await query
                 .OrderByDescending(x => x.FechaEfectividad)
                 .Skip((filter.PageNumber - 1) * filter.PageSize)
@@ -42,7 +44,7 @@ namespace Infraestructure.Repositories.Historico
                 })
                 .ToListAsync(cancellationToken);
 
-            return new PagedData<AsignacionViewModel>(rows, filter.PageSize, filter.PageNumber);
+            return new PagedData<AsignacionViewModel>(rows, filter.PageSize, filter.PageNumber, totalRecords);
         }
 
         public async Task<Result<Asignacion>> GetById(Guid id, CancellationToken cancellationToken)

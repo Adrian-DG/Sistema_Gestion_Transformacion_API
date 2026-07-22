@@ -11,8 +11,6 @@ namespace Application.Contracts.Recursos
 {
     public interface IVehiculoRepository
     {
-        Task Create(Vehiculo vehiculo, CancellationToken cancellationToken);
-        Task<PagedData<VehiculoViewModel>> Get(PaginationFilterQuery<VehiculoViewModel> filter, CancellationToken cancellationToken);
-        Task<Result<Vehiculo>> GetById(Guid id, CancellationToken cancellationToken);
+        Task Create(Vehiculo vehiculo, CancellationToken cancellationToken);    
     }
 }

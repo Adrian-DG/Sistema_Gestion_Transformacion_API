@@ -1,4 +1,5 @@
 ﻿using Application.Contracts;
+using AutoMapper;
 using Domain.Common;
 using FluentValidation;
 using MediatR;
@@ -48,23 +49,11 @@ public class CreateVehiculoCommandValidator : AbstractValidator<CreateVehiculoCo
     }
 }
 
-public class CreateVehiculoCommandHandler(IUnitOfWork uow) : IRequestHandler<CreateVehiculoCommand, Result>
+public class CreateVehiculoCommandHandler(IUnitOfWork uow, IMapper mapper) : IRequestHandler<CreateVehiculoCommand, Result>
 {
     public async Task<Result> Handle(CreateVehiculoCommand request, CancellationToken cancellationToken)
     {
-        var vehiculo = new Domain.Entities.Recursos.Vehiculo
-        {
-            Chasis = request.Chasis,
-            Matricula = request.Matricula,
-            Placa = request.Placa,
-            Fabricacion = request.Fabricacion,
-            MarcaId = request.MarcaId,
-            ModeloId = request.ModeloId,
-            TipoId = request.TipoId,
-            ColorId = request.ColorId,
-            Disponible = true
-        };
-
+        var vehiculo = mapper.Map<Domain.Entities.Recursos.Vehiculo>(request);
         await uow.VehiculoRepository.Create(vehiculo, cancellationToken);
         await uow.SaveChangesAsync(cancellationToken);
         return Result.Success();

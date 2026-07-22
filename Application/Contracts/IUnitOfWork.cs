@@ -10,6 +10,8 @@ namespace Application.Contracts
         IAsignacionRepository AsignacionRepository { get; }
         IPolizaRepository PolizaRepository { get; }
         IAuthenticationRepository AuthenticationRepository { get; }
+
+        IQueryable<TEntity> Query<TEntity>() where TEntity : class;
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
     }
 }

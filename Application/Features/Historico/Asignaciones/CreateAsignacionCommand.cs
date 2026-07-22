@@ -5,6 +5,7 @@ using Domain.Entities.Historico;
 using Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Historico.Asignaciones;
 
@@ -36,14 +37,13 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 {
     public async Task<Result<Guid>> Handle(CreateAsignacionCommand request, CancellationToken cancellationToken)
     {
-        var vehiculoResult = await unitOfWork.VehiculoRepository.GetById(request.VehiculoId, cancellationToken);
+        var vehiculo = await unitOfWork.Query<Domain.Entities.Recursos.Vehiculo>()
+            .FirstAsync(v => v.Id == request.VehiculoId, cancellationToken);
 
-        if (vehiculoResult.IsFailure)
+        if (vehiculo is null)
         {
-            return Result.Failure<Guid>(vehiculoResult.Error);
-        }
-
-        var vehiculo = vehiculoResult.Value;
+            return Result.Failure<Guid>(VehiculoErrors.NotFound(request.VehiculoId));
+        }        
 
         if (!vehiculo.Disponible)
         {
@@ -56,13 +56,7 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             VehiculoId = request.VehiculoId,
             FechaEfectividad = request.FechaEfectividad,
             Motivo = request.Motivo,
-            Estatus = EstatusAsignacion.PendienteConfirmacion,
-            Adjuntos = request.Adjuntos.Select(x => new Adjunto
-            {
-                TipoDocumentoId = x.TipoDocumentoId,
-                TipoOperacionId = x.TipoOperacionId,
-                File = Convert.FromBase64String(x.FileBase64),
-            }).ToList()
+            Estatus = EstatusAsignacion.PendienteConfirmacion
         };
 
         vehiculo.Disponible = false;
@@ -70,6 +64,6 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         await unitOfWork.AsignacionRepository.Create(asignacion, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return asignacion.Id;
+        return Result.Success(asignacion.Id);
     }
 }

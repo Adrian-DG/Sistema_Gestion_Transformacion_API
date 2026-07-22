@@ -8,6 +8,7 @@ using Infraestructure.Repositories.Authentication;
 using Infraestructure.Repositories.Historico;
 using Infraestructure.Repositories.Recursos;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infraestructure.Data
 {
@@ -17,12 +18,14 @@ namespace Infraestructure.Data
         private IAsignacionRepository? _asignacionRepository;
         private IPolizaRepository? _polizaRepository;
         private IAuthenticationRepository? _authenticationRepository;
-
-        public IVehiculoRepository VehiculoRepository => _vehiculoRepository ??= new VehiculoRepository(context);
-        public IAsignacionRepository AsignacionRepository => _asignacionRepository ??= new AsignacionRepository(context);
-        public IPolizaRepository PolizaRepository => _polizaRepository ??= new PolizaRepository(context);
         public IAuthenticationRepository AuthenticationRepository => _authenticationRepository 
             ??= new AuthenticationRepository(userManager, signInManager, tokenGenerator);
+
+        public IQueryable<TEntity> Query<TEntity>() where TEntity : class
+        {
+            return context.Set<TEntity>().AsNoTracking();
+        }
+
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         {
             return context.SaveChangesAsync(cancellationToken);
