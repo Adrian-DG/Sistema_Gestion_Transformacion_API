@@ -37,6 +37,8 @@ namespace Infraestructure.Repositories.Historico
                 query = query.Where(x => x.VehiculoId.ToString().Contains(filter.Param));
             }
 
+            var totalRecords = await query.CountAsync(cancellationToken);
+
             var rows = await query
                 .OrderByDescending(x => x.FechaExpedicion)
                 .Skip((filter.PageNumber - 1) * filter.PageSize)
@@ -53,7 +55,7 @@ namespace Infraestructure.Repositories.Historico
                 })
                 .ToListAsync(cancellationToken);
 
-            return new PagedData<PolizaViewModel>(rows, filter.PageSize, filter.PageNumber);
+            return new PagedData<PolizaViewModel>(rows, filter.PageSize, filter.PageNumber, totalRecords);
         }
     }
 }
