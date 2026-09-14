@@ -30,7 +30,7 @@ namespace Infraestructure.Interceptors
                             case EntityState.Modified:
                                 auditableEntity.UpdatedBy = userId.Value;
                                 auditableEntity.UpdatedAt = DateTime.UtcNow;
-                                break;
+                                break;         
                         }
                     }
                 }
