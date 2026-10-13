@@ -1,13 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace Domain.Enums
 {
-    public enum EstatusAsignacion
+    /// <summary>
+    /// Ciclo de vida de una solicitud (de vehículo o de tickets de combustible).
+    /// Pendiente → Aprobada → Finalizada, o bien Rechazada / Cancelada.
+    /// </summary>
+    public enum EstatusSolicitud
     {
-        PendienteConfirmacion = 0,
-        Confirmado = 1,
-        Cancelado = 2
+        Pendiente = 0,
+        Aprobada = 1,
+        Cancelada = 2,
+        Rechazada = 3,
+        Finalizada = 4
     }
 }

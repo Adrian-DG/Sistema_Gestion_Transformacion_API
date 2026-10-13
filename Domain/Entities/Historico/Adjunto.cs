@@ -1,14 +1,17 @@
-﻿using Domain.Abstraction;
+using Domain.Abstraction;
 using Domain.Entities.Misc;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Domain.Entities.Historico
 {
+    /// <summary>
+    /// Documento digitalizado. Pertenece a la entidad indicada por <see cref="TipoOperacionId"/>
+    /// (ver <see cref="Constants.TiposOperacion"/>) cuyo Id es <see cref="IdentificadorOperacion"/>.
+    /// </summary>
     public class Adjunto : BaseEntityMetadata, IAuditableEntityMetadata
     {
         public required byte[] File { get; set; }
+        public required string NombreArchivo { get; set; }
+        public required string ContentType { get; set; }
         public Guid TipoDocumentoId { get; set; }
         public virtual TipoDocumento? TipoDocumento { get; set; }
         public Guid TipoOperacionId { get; set; }
@@ -23,7 +26,7 @@ namespace Domain.Entities.Historico
 
         public string ConvertFileToDateUrl()
         {
-            return $"data:application/octet-stream;base64,{Convert.ToBase64String(File)}";
+            return $"data:{ContentType};base64,{Convert.ToBase64String(File)}";
         }
     }
 }

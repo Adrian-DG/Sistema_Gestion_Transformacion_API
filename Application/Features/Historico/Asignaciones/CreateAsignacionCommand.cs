@@ -1,50 +1,52 @@
+using Application.Common.DTO;
+using Application.Common.Validation;
 using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
+using Domain.Constants;
 using Domain.Entities.Historico;
 using Domain.Enums;
 using FluentValidation;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Historico.Asignaciones;
 
-public record CreateAdjuntoRequest(Guid TipoDocumentoId, Guid TipoOperacionId, string FileBase64);
-
+/// <summary>
+/// Registra la solicitud de un vehículo. Queda en estatus Pendiente hasta su aprobación;
+/// mientras tanto el vehículo sigue disponible.
+/// </summary>
 public record CreateAsignacionCommand(
-    Guid PersonaId,
+    TipoBeneficiario TipoAsignacion,
+    Guid? CargoId,
+    Guid? PersonaId,
+    Guid SolicitantePersonaId,
+    Guid DependenciaSolicitanteId,
     Guid VehiculoId,
-    DateOnly FechaEfectividad,
-    string Motivo,
-    List<CreateAdjuntoRequest> Adjuntos
+    string Proposito,
+    string? Destino,
+    DateTime FechaSalida,
+    DateTime FechaRetornoEstimada,
+    List<AdjuntoRequest> Adjuntos
 ) : IRequest<Result<Guid>>;
 
 public class CreateAsignacionCommandValidator : AbstractValidator<CreateAsignacionCommand>
 {
     public CreateAsignacionCommandValidator()
     {
-        RuleFor(x => x.PersonaId).NotEmpty();
+        this.ValidarBeneficiario(x => x.TipoAsignacion, x => x.CargoId, x => x.PersonaId);
+        RuleFor(x => x.SolicitantePersonaId).NotEmpty();
+        RuleFor(x => x.DependenciaSolicitanteId).NotEmpty();
         RuleFor(x => x.VehiculoId).NotEmpty();
-        RuleFor(x => x.Motivo).NotEmpty().MaximumLength(500);
+        RuleFor(x => x.Proposito).NotEmpty().MaximumLength(500);
+        RuleFor(x => x.Destino).MaximumLength(250);
+        RuleFor(x => x.FechaRetornoEstimada)
+            .GreaterThan(x => x.FechaSalida)
+            .WithMessage("La fecha de retorno estimada debe ser posterior a la fecha de salida.");
         RuleFor(x => x.Adjuntos)
             .NotNull()
             .NotEmpty()
             .WithMessage("Debe adjuntar al menos un documento para registrar la asignación.");
-        RuleForEach(x => x.Adjuntos).ChildRules(adjunto =>
-        {
-            adjunto.RuleFor(a => a.TipoDocumentoId).NotEmpty();
-            adjunto.RuleFor(a => a.TipoOperacionId).NotEmpty();
-            adjunto.RuleFor(a => a.FileBase64)
-                .NotEmpty()
-                .Must(BeValidBase64)
-                .WithMessage("El archivo adjunto no tiene un formato Base64 válido.");
-        });
-    }
-
-    private static bool BeValidBase64(string value)
-    {
-        var buffer = new byte[value.Length];
-        return Convert.TryFromBase64String(value, buffer, out _);
+        RuleForEach(x => x.Adjuntos).SetValidator(new AdjuntoRequestValidator());
     }
 }
 
@@ -52,49 +54,50 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 {
     public async Task<Result<Guid>> Handle(CreateAsignacionCommand request, CancellationToken cancellationToken)
     {
-        var personaExists = await unitOfWork.Query<Persona>()
-            .AnyAsync(p => p.Id == request.PersonaId, cancellationToken);
+        var beneficiario = await unitOfWork.ValidarBeneficiarioAsync(request.TipoAsignacion, request.CargoId, request.PersonaId, cancellationToken);
+        if (beneficiario.IsFailure) return Result.Failure<Guid>(beneficiario.Error);
 
-        if (!personaExists)
-        {
-            return Result.Failure<Guid>(AsignacionErrors.PersonaNotFound(request.PersonaId));
-        }
+        var solicitante = await unitOfWork.ValidarSolicitanteAsync(request.SolicitantePersonaId, request.DependenciaSolicitanteId, cancellationToken);
+        if (solicitante.IsFailure) return Result.Failure<Guid>(solicitante.Error);
 
         var vehiculoResult = await unitOfWork.VehiculoRepository.GetById(request.VehiculoId, cancellationToken);
+        if (vehiculoResult.IsFailure) return Result.Failure<Guid>(vehiculoResult.Error);
 
-        if (vehiculoResult.IsFailure)
+        // Disponible indica si el vehículo está operativo (no fuera de servicio).
+        if (!vehiculoResult.Value.Disponible)
         {
-            return Result.Failure<Guid>(vehiculoResult.Error);
+            return Result.Failure<Guid>(VehiculoErrors.NotAvailable(request.VehiculoId));
         }
 
-        var vehiculo = vehiculoResult.Value;
+        var ocupado = await unitOfWork.VehiculoOcupadoAsync(
+            request.VehiculoId, request.FechaSalida, request.FechaRetornoEstimada, null, DateTime.Now, cancellationToken);
 
-        if (!vehiculo.Disponible)
+        if (ocupado)
         {
-            return Result.Failure<Guid>(VehiculoErrors.NotAvailable(vehiculo.Id));
+            return Result.Failure<Guid>(AsignacionErrors.VehiculoOcupado(request.VehiculoId));
         }
 
         var asignacion = new Asignacion
         {
+            Id = Guid.NewGuid(),
+            Estatus = EstatusSolicitud.Pendiente,
+            TipoAsignacion = request.TipoAsignacion,
+            CargoId = request.CargoId,
             PersonaId = request.PersonaId,
+            SolicitantePersonaId = request.SolicitantePersonaId,
+            DependenciaSolicitanteId = request.DependenciaSolicitanteId,
             VehiculoId = request.VehiculoId,
-            FechaEfectividad = request.FechaEfectividad,
-            Motivo = request.Motivo,
-            Estatus = EstatusAsignacion.PendienteConfirmacion
+            Proposito = request.Proposito,
+            Destino = request.Destino,
+            FechaSalida = request.FechaSalida,
+            FechaRetornoEstimada = request.FechaRetornoEstimada,
+            Status = true
         };
 
-        vehiculo.Disponible = false;
-
         await unitOfWork.AsignacionRepository.Create(asignacion, cancellationToken);
-
-        // El Id de la asignación se genera al agregarla al contexto, por eso los adjuntos se crean después.
-        asignacion.Adjuntos = request.Adjuntos.Select(x => new Adjunto
-        {
-            TipoDocumentoId = x.TipoDocumentoId,
-            TipoOperacionId = x.TipoOperacionId,
-            IdentificadorOperacion = asignacion.Id,
-            File = Convert.FromBase64String(x.FileBase64),
-        }).ToList();
+        await unitOfWork.AddRangeAsync(
+            request.Adjuntos.Select(a => a.ToEntity(TiposOperacion.Asignacion, asignacion.Id)),
+            cancellationToken);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -4,5 +4,7 @@ public enum AppPolicy
 {
     CanManageVehiculos,
     CanManageAsignaciones,
-    CanManagePolizas
+    CanManagePolizas,
+    CanManageCombustible,
+    CanManageOrganizacion
 }

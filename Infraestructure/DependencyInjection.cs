@@ -75,6 +75,10 @@ namespace Infraestructure
                     p => p.RequireRole(AppPermission.GestionAsignaciones.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManagePolizas.ToString(),
                     p => p.RequireRole(AppPermission.GestionPolizas.ToString(), AppPermission.Administrador.ToString()));
+                options.AddPolicy(AppPolicy.CanManageCombustible.ToString(),
+                    p => p.RequireRole(AppPermission.GestionCombustible.ToString(), AppPermission.Administrador.ToString()));
+                options.AddPolicy(AppPolicy.CanManageOrganizacion.ToString(),
+                    p => p.RequireRole(AppPermission.GestionOrganizacion.ToString(), AppPermission.Administrador.ToString()));
             });
 
             services.AddMemoryCache();            

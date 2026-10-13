@@ -30,6 +30,21 @@ namespace Infraestructure.Data
             return context.Set<TEntity>().AsNoTracking();
         }
 
+        public IQueryable<TEntity> Tracked<TEntity>() where TEntity : class
+        {
+            return context.Set<TEntity>().AsTracking();
+        }
+
+        public async Task AddAsync<TEntity>(TEntity entity, CancellationToken cancellationToken) where TEntity : class
+        {
+            await context.Set<TEntity>().AddAsync(entity, cancellationToken);
+        }
+
+        public Task AddRangeAsync<TEntity>(IEnumerable<TEntity> entities, CancellationToken cancellationToken) where TEntity : class
+        {
+            return context.Set<TEntity>().AddRangeAsync(entities, cancellationToken);
+        }
+
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         {
             return context.SaveChangesAsync(cancellationToken);

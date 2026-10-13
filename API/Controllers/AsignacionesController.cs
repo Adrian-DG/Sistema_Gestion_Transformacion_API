@@ -15,14 +15,44 @@ namespace API.Controllers
         public async Task<IActionResult> Create([FromBody] CreateAsignacionCommand command, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(command, cancellationToken);
-            return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
+            return HandleResult(result);
         }
 
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] PaginationFilterQuery<AsignacionViewModel> query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
-            return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
+            return HandleResult(result);
+        }
+
+        [HttpPost("{id:Guid}/aprobar")]
+        public async Task<IActionResult> Aprobar([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new AprobarAsignacionCommand(id), cancellationToken);
+            return HandleResult(result);
+        }
+
+        [HttpPost("{id:Guid}/rechazar")]
+        public async Task<IActionResult> Rechazar([FromRoute] Guid id, [FromBody] MotivoRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new RechazarAsignacionCommand(id, request.Motivo), cancellationToken);
+            return HandleResult(result);
+        }
+
+        [HttpPost("{id:Guid}/cancelar")]
+        public async Task<IActionResult> Cancelar([FromRoute] Guid id, [FromBody] MotivoRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new CancelarAsignacionCommand(id, request.Motivo), cancellationToken);
+            return HandleResult(result);
+        }
+
+        [HttpPost("{id:Guid}/retorno")]
+        public async Task<IActionResult> RegistrarRetorno([FromRoute] Guid id, [FromBody] RetornoRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new RegistrarRetornoAsignacionCommand(id, request.FechaRetorno), cancellationToken);
+            return HandleResult(result);
         }
     }
+
+    public record RetornoRequest(DateTime FechaRetorno);
 }

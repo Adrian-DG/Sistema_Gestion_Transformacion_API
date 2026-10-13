@@ -1,5 +1,8 @@
 ﻿using Application.Common.DTO;
+using Application.Features.Combustible.Movimientos;
+using Application.Features.Combustible.Tickets;
 using Application.Features.Historico.Asignaciones;
+using Application.Features.Organizacion.Personas;
 using Application.Features.Historico.Polizas;
 using Application.Features.Vehiculo;
 using FluentValidation;
@@ -30,6 +33,9 @@ namespace Application
             services.AddScoped<IValidator<PaginationFilterQuery<VehiculoViewModel>>, PaginationFilterQueryValidator<VehiculoViewModel>>();
             services.AddScoped<IValidator<PaginationFilterQuery<AsignacionViewModel>>, PaginationFilterQueryValidator<AsignacionViewModel>>();
             services.AddScoped<IValidator<PaginationFilterQuery<PolizaViewModel>>, PaginationFilterQueryValidator<PolizaViewModel>>();
+            services.AddScoped<IValidator<PaginationFilterQuery<PersonaViewModel>>, PaginationFilterQueryValidator<PersonaViewModel>>();
+            services.AddScoped<IValidator<PaginationFilterQuery<SolicitudTicketViewModel>>, PaginationFilterQueryValidator<SolicitudTicketViewModel>>();
+            services.AddScoped<IValidator<PaginationFilterQuery<MovimientoCombustibleViewModel>>, PaginationFilterQueryValidator<MovimientoCombustibleViewModel>>();
 
             services.AddAutoMapper(cfg => cfg.AddMaps(assembly));
 
