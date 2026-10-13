@@ -1,10 +1,13 @@
 using API.Security;
 using Application.Contracts.Reportes;
+using Application.Features.Configuracion;
 using Application.Features.Reportes.Asignaciones;
 using Application.Features.Reportes.Combustible;
 using Application.Security;
 using Domain.Common;
+using Domain.Enums;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -46,6 +49,18 @@ namespace API.Controllers
         {
             var result = await _mediator.Send(query, cancellationToken);
             return ArchivoExcel(result);
+        }
+
+        /// <summary>
+        /// Encabezado, pie, firmante, título y logos (Base64) de la plantilla predeterminada para un
+        /// reporte PDF. <paramref name="tipoReporte"/>: OperacionesCombustible o Asignaciones.
+        /// </summary>
+        [HttpGet("plantilla/{tipoReporte}")]
+        [Authorize]
+        public async Task<IActionResult> GetPlantilla([FromRoute] TipoReportePdf tipoReporte, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetDatosReportePdfQuery(tipoReporte), cancellationToken);
+            return HandleResult(result);
         }
 
         private IActionResult ArchivoExcel(Result<ArchivoReporte> result) =>

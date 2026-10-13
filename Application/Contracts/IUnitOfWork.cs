@@ -19,6 +19,10 @@ namespace Application.Contracts
 
         Task AddAsync<TEntity>(TEntity entity, CancellationToken cancellationToken) where TEntity : class;
         Task AddRangeAsync<TEntity>(IEnumerable<TEntity> entities, CancellationToken cancellationToken) where TEntity : class;
+        void Remove<TEntity>(TEntity entity) where TEntity : class;
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
+
+        /// <summary>Ejecuta la operación dentro de una transacción; se confirma solo si devuelve éxito.</summary>
+        Task<TResult> EnTransaccionAsync<TResult>(Func<Task<TResult>> operacion, CancellationToken cancellationToken) where TResult : Domain.Common.Result;
     }
 }

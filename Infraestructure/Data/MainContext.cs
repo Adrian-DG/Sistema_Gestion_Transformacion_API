@@ -148,6 +148,40 @@ namespace Infraestructure.Data
                 e.Property(a => a.LogoNombreArchivo).HasMaxLength(260);
             });
 
+            builder.Entity<PlantillaReporte>(e =>
+            {
+                e.ToTable("PlantillasReporte", "configuracion");
+                e.HasIndex(p => p.Nombre).IsUnique();
+                // Una sola plantilla predeterminada.
+                e.HasIndex(p => p.EsPredeterminada).IsUnique().HasFilter("[EsPredeterminada] = 1");
+                e.Property(p => p.Nombre).HasMaxLength(100);
+                e.Property(p => p.Descripcion).HasMaxLength(300);
+                e.Property(p => p.TextoEncabezado).HasMaxLength(1000);
+                e.Property(p => p.NotaPiePagina).HasMaxLength(1000);
+                e.Property(p => p.FirmanteNombre).HasMaxLength(150);
+                e.Property(p => p.FirmanteRango).HasMaxLength(100);
+                e.Property(p => p.FirmanteProfesion).HasMaxLength(100);
+                e.Property(p => p.FirmanteCargo).HasMaxLength(150);
+            });
+
+            builder.Entity<PlantillaReporteLogo>(e =>
+            {
+                e.ToTable("PlantillaReporteLogos", "configuracion", t => t.HasCheckConstraint("CK_PlantillaReporteLogos_Posicion", "[Posicion] IN (1, 2, 3)"));
+                e.HasIndex(l => new { l.PlantillaReporteId, l.Posicion }).IsUnique();
+                e.HasOne(l => l.PlantillaReporte).WithMany(p => p.Logos).HasForeignKey(l => l.PlantillaReporteId);
+                e.Property(l => l.ContentType).HasMaxLength(50);
+                e.Property(l => l.NombreArchivo).HasMaxLength(260);
+            });
+
+            builder.Entity<PlantillaReporteTitulo>(e =>
+            {
+                e.ToTable("PlantillaReporteTitulos", "configuracion");
+                e.HasIndex(t => new { t.PlantillaReporteId, t.TipoReporte }).IsUnique();
+                e.HasOne(t => t.PlantillaReporte).WithMany(p => p.Titulos).HasForeignKey(t => t.PlantillaReporteId);
+                e.Property(t => t.Titulo).HasMaxLength(200);
+                e.Property(t => t.Subtitulo).HasMaxLength(300);
+            });
+
             // Resource entities
             builder.Entity<Vehiculo>(e =>
             {
@@ -178,6 +212,7 @@ namespace Infraestructure.Data
             var marcas = MarcaSeeder.Seed(builder);
             ModeloSeeder.Seed(builder, marcas);
             AparienciaSeeder.Seed(builder);
+            PlantillaReporteSeeder.Seed(builder);
             #endregion
         }
 
@@ -207,6 +242,9 @@ namespace Infraestructure.Data
         public DbSet<MovimientoCombustible> MovimientosCombustible { get; set; }
 
         public DbSet<Apariencia> Apariencia { get; set; }
+        public DbSet<PlantillaReporte> PlantillasReporte { get; set; }
+        public DbSet<PlantillaReporteLogo> PlantillaReporteLogos { get; set; }
+        public DbSet<PlantillaReporteTitulo> PlantillaReporteTitulos { get; set; }
 
         #endregion
 

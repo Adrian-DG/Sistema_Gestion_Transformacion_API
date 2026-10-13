@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
@@ -98,39 +99,9 @@ public class ActualizarLogoCommandValidator : AbstractValidator<ActualizarLogoCo
         RuleFor(x => x.NombreArchivo).NotEmpty().MaximumLength(260);
         RuleFor(x => x.FileBase64)
             .NotEmpty()
-            .Must(b => Logo.Decodificar(b) is not null).WithMessage("El logo no tiene un formato Base64 válido.")
-            .Must(b => (Logo.Decodificar(b)?.Length ?? 0) <= TamanoMaximoBytes).WithMessage("El logo no puede superar 1 MB.");
+            .Must(b => Imagen.Decodificar(b) is not null).WithMessage("El logo no tiene un formato Base64 válido.")
+            .Must(b => (Imagen.Decodificar(b)?.Length ?? 0) <= TamanoMaximoBytes).WithMessage("El logo no puede superar 1 MB.");
     }
-}
-
-internal static class Logo
-{
-    /// <summary>Acepta Base64 puro o un data URL ("data:image/png;base64,...").</summary>
-    public static byte[]? Decodificar(string? base64)
-    {
-        if (string.IsNullOrWhiteSpace(base64)) return null;
-
-        var coma = base64.IndexOf(',');
-        if (base64.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && coma > 0)
-        {
-            base64 = base64[(coma + 1)..];
-        }
-
-        var buffer = new byte[base64.Length];
-        return Convert.TryFromBase64String(base64.Trim(), buffer, out var escritos) ? buffer[..escritos] : null;
-    }
-
-    /// <summary>
-    /// Identifica el formato por su firma. SVG queda excluido a propósito: puede contener scripts
-    /// y el logo se sirve sin autenticación.
-    /// </summary>
-    public static string? DetectarContentType(byte[] contenido) => contenido switch
-    {
-        [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, ..] => "image/png",
-        [0xFF, 0xD8, 0xFF, ..] => "image/jpeg",
-        [0x52, 0x49, 0x46, 0x46, _, _, _, _, 0x57, 0x45, 0x42, 0x50, ..] => "image/webp",
-        _ => null
-    };
 }
 
 public class AparienciaQueryHandler(IUnitOfWork uow) :
@@ -179,8 +150,8 @@ public class AparienciaCommandHandler(IUnitOfWork uow) :
 
     public async Task<Result<AparienciaViewModel>> Handle(ActualizarLogoCommand request, CancellationToken cancellationToken)
     {
-        var contenido = Logo.Decodificar(request.FileBase64)!;
-        var contentType = Logo.DetectarContentType(contenido);
+        var contenido = Imagen.Decodificar(request.FileBase64)!;
+        var contentType = Imagen.DetectarContentType(contenido);
         if (contentType is null)
         {
             return Result.Failure<AparienciaViewModel>(ConfiguracionErrors.FormatoLogoInvalido);

@@ -45,9 +45,32 @@ namespace Infraestructure.Data
             return context.Set<TEntity>().AddRangeAsync(entities, cancellationToken);
         }
 
+        public void Remove<TEntity>(TEntity entity) where TEntity : class
+        {
+            context.Set<TEntity>().Remove(entity);
+        }
+
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken)
         {
             return context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task<TResult> EnTransaccionAsync<TResult>(Func<Task<TResult>> operacion, CancellationToken cancellationToken)
+            where TResult : Domain.Common.Result
+        {
+            await using var transaccion = await context.Database.BeginTransactionAsync(cancellationToken);
+
+            var resultado = await operacion();
+            if (resultado.IsSuccess)
+            {
+                await transaccion.CommitAsync(cancellationToken);
+            }
+            else
+            {
+                context.ChangeTracker.Clear();
+            }
+
+            return resultado;
         }
     }
 }
