@@ -1,11 +1,13 @@
 ﻿using Application.Constants;
 using Application.Contracts;
 using Application.Contracts.Authentication;
+using Application.Contracts.Externos;
 using Application.Contracts.Historico;
 using Application.Contracts.Misc;
 using Application.Contracts.Recursos;
 using Application.Security;
 using Infraestructure.Data;
+using Infraestructure.External.Sipffaa;
 using Infraestructure.Identity.Authentication;
 using Infraestructure.Identity.Models;
 using Infraestructure.Interceptors;
@@ -98,6 +100,10 @@ namespace Infraestructure
             services.AddScoped<IAsignacionRepository, AsignacionRepository>();
             services.AddScoped<IPolizaRepository, PolizaRepository>();
             services.AddScoped(typeof(ICatalogRepository<>), typeof(CatalogRepository<>));
+
+            // Sistemas externos (Dapper)
+            services.AddSingleton<ISipffaaConnectionFactory, SipffaaConnectionFactory>();
+            services.AddScoped<ISipffaaService, SipffaaService>();
 
             return services;
         }
