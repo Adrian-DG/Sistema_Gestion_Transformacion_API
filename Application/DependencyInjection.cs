@@ -9,6 +9,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Reflection;
 using System.Text;
 
@@ -26,6 +27,9 @@ namespace Application
                 cfg.AddOpenBehavior(typeof(Behaviors.ValidationBehavior<,>));
             });
             services.AddValidatorsFromAssembly(assembly);
+
+            // Mensajes predeterminados de FluentValidation en español, sin depender de la cultura del servidor.
+            ValidatorOptions.Global.LanguageManager.Culture = new CultureInfo("es");
 
             // AddValidatorsFromAssembly only registers closed generic validators. PaginationFilterQueryValidator<T>
             // is open generic and the built-in container can't auto-wire IValidator<PaginationFilterQuery<T>> from

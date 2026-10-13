@@ -4,6 +4,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.Text.Json;
 
 namespace API.Controllers
 {
@@ -48,6 +49,19 @@ namespace API.Controllers
                 ErrorType.Validation => StatusCodes.Status400BadRequest,
                 _ => StatusCodes.Status500InternalServerError
             };
+
+            if (result.Error is ValidationError validation)
+            {
+                // Errores por campo (camelCase, como el JSON) para que el frontend los muestre junto a cada control.
+                var errors = validation.Errors
+                    .GroupBy(e => JsonNamingPolicy.CamelCase.ConvertName(e.Code))
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.Message).ToArray());
+
+                var problem = ProblemDetailsFactory.CreateValidationProblemDetails(HttpContext, new ModelStateDictionary(), statusCode,
+                    title: result.Error.Code, detail: result.Error.Message);
+                problem.Errors = errors;
+                return new ObjectResult(problem) { StatusCode = statusCode };
+            }
 
             return Problem(title: result.Error.Code, detail: result.Error.Message, statusCode: statusCode);
         }
