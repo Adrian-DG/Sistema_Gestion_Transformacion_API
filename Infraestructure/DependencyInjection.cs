@@ -3,6 +3,8 @@ using Application.Contracts;
 using Application.Contracts.Authentication;
 using Application.Contracts.Externos;
 using Application.Contracts.Reportes;
+using Application.Contracts.Usuarios;
+using Infraestructure.Identity;
 using Infraestructure.Reportes;
 using Application.Contracts.Historico;
 using Application.Contracts.Misc;
@@ -50,6 +52,7 @@ namespace Infraestructure
                     options.User.RequireUniqueEmail = true;
                 })
                 .AddRoles<AppRole>()
+                .AddErrorDescriber<SpanishIdentityErrorDescriber>()
                 .AddEntityFrameworkStores<MainContext>()
                 .AddSignInManager();
 
@@ -83,6 +86,8 @@ namespace Infraestructure
                     p => p.RequireRole(AppPermission.GestionCombustible.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManageOrganizacion.ToString(),
                     p => p.RequireRole(AppPermission.GestionOrganizacion.ToString(), AppPermission.Administrador.ToString()));
+                options.AddPolicy(AppPolicy.CanManageUsuarios.ToString(),
+                    p => p.RequireRole(AppPermission.GestionUsuarios.ToString(), AppPermission.Administrador.ToString()));
             });
 
             services.AddMemoryCache();            
@@ -103,6 +108,7 @@ namespace Infraestructure
             services.AddScoped<IPolizaRepository, PolizaRepository>();
             services.AddScoped(typeof(ICatalogRepository<>), typeof(CatalogRepository<>));
 
+            services.AddScoped<IUsuarioService, UsuarioService>();
             services.AddSingleton<IExcelReportGenerator, ClosedXmlReportGenerator>();
 
             // Sistemas externos (Dapper)

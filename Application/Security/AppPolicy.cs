@@ -6,5 +6,6 @@ public enum AppPolicy
     CanManageAsignaciones,
     CanManagePolizas,
     CanManageCombustible,
-    CanManageOrganizacion
+    CanManageOrganizacion,
+    CanManageUsuarios
 }

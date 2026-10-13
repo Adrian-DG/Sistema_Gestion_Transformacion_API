@@ -31,7 +31,12 @@ namespace Infraestructure.Data
             #region Entity Configurations
 
             // Identity entities
-            builder.Entity<AppUser>(e => e.ToTable("Usuarios", "acceso"));
+            builder.Entity<AppUser>(e =>
+            {
+                e.ToTable("Usuarios", "acceso");
+                e.HasIndex(u => u.Identificacion).IsUnique();
+                e.HasOne(u => u.Rango).WithMany().HasForeignKey(u => u.RangoId).OnDelete(DeleteBehavior.Restrict);
+            });
             builder.Entity<AppRole>(e => e.ToTable("Permisos", "acceso"));
 
             // Miscellaneous entities
@@ -145,6 +150,7 @@ namespace Infraestructure.Data
 
             #region Seed Data
             TipoOperacionSeeder.Seed(builder);
+            RoleSeeder.Seed(builder);
             RangoSeeder.Seed(builder);
             var marcas = MarcaSeeder.Seed(builder);
             ModeloSeeder.Seed(builder, marcas);

@@ -22,6 +22,11 @@ namespace Infraestructure.Repositories.Authentication
                 return Result.Failure<string>(AuthenticationErrors.InvalidCredentials());
             }
 
+            if (!user.Activo)
+            {
+                return Result.Failure<string>(UsuarioErrors.Inactivo);
+            }
+
             var roles = await userManager.GetRolesAsync(user);
             var token = tokenGenerator.GenerateToken(user, [.. roles]);
 

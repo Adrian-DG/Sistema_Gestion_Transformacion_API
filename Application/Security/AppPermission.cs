@@ -7,5 +7,6 @@ public enum AppPermission
     GestionAsignaciones,
     GestionPolizas,
     GestionCombustible,
-    GestionOrganizacion
+    GestionOrganizacion,
+    GestionUsuarios
 }
