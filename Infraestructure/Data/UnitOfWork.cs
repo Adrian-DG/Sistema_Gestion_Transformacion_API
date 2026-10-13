@@ -18,6 +18,10 @@ namespace Infraestructure.Data
         private IAsignacionRepository? _asignacionRepository;
         private IPolizaRepository? _polizaRepository;
         private IAuthenticationRepository? _authenticationRepository;
+
+        public IVehiculoRepository VehiculoRepository => _vehiculoRepository ??= new VehiculoRepository(context);
+        public IAsignacionRepository AsignacionRepository => _asignacionRepository ??= new AsignacionRepository(context);
+        public IPolizaRepository PolizaRepository => _polizaRepository ??= new PolizaRepository(context);
         public IAuthenticationRepository AuthenticationRepository => _authenticationRepository 
             ??= new AuthenticationRepository(userManager, signInManager, tokenGenerator);
 

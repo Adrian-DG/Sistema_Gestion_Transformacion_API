@@ -9,9 +9,19 @@ namespace Infraestructure.Interceptors
     {
         public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
         {
-            var context = eventData.Context;
+            ApplyAuditMetadata(eventData.Context);
+            return base.SavingChanges(eventData, result);
+        }
 
-            if (context is null) return base.SavingChanges(eventData, result);
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            ApplyAuditMetadata(eventData.Context);
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        private void ApplyAuditMetadata(DbContext? context)
+        {
+            if (context is null) return;
 
             var userId = currentUserService.UserId;
 
@@ -35,8 +45,6 @@ namespace Infraestructure.Interceptors
                     }
                 }
             }
-
-            return base.SavingChanges(eventData, result);
         }
     }
 }

@@ -49,9 +49,9 @@ namespace Infraestructure.Repositories.Historico
                     VehiculoId = x.VehiculoId,
                     FechaExpedicion = x.FechaExpedicion,
                     FechaVencimiento = x.FechaVencimiento,
-                    Vehiculo = x.Vehiculo.ToString(),
+                    Vehiculo = x.Vehiculo!.Matricula + " | " + x.Vehiculo.Marca!.Nombre + " | " + x.Vehiculo.Modelo!.Nombre,
                     NumeroPoliza = x.Numero,
-                    Aseguradora = x.Aseguradora.Nombre
+                    Aseguradora = x.Aseguradora!.Nombre
                 })
                 .ToListAsync(cancellationToken);
 

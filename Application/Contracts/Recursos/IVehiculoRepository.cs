@@ -11,6 +11,7 @@ namespace Application.Contracts.Recursos
 {
     public interface IVehiculoRepository
     {
-        Task Create(Vehiculo vehiculo, CancellationToken cancellationToken);    
+        Task Create(Vehiculo vehiculo, CancellationToken cancellationToken);
+        Task<Result<Vehiculo>> GetById(Guid id, CancellationToken cancellationToken);
     }
 }

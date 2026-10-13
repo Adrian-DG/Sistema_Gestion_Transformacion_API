@@ -2,6 +2,7 @@
 using Application.Contracts;
 using AutoMapper;
 using Domain.Common;
+using Domain.Common.Errors;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -15,8 +16,13 @@ public class GetVehiculoQueryHandler(IUnitOfWork uow, IMapper mapper) : IRequest
     public async Task<Result<VehiculoViewModel>> Handle(IDEntityFilterQuery<VehiculoViewModel> request, CancellationToken cancellationToken)
     {
         var vehiculo = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
-            .FirstAsync(v => v.Id == request.Id, cancellationToken);      
-    
+            .FirstOrDefaultAsync(v => v.Id == request.Id, cancellationToken);
+
+        if (vehiculo is null)
+        {
+            return Result.Failure<VehiculoViewModel>(VehiculoErrors.NotFound(request.Id));
+        }
+
         var vehiculoViewModel = mapper.Map<VehiculoViewModel>(vehiculo);
 
         return Result<VehiculoViewModel>.Success(vehiculoViewModel);

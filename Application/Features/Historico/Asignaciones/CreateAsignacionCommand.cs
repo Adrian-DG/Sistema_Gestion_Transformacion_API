@@ -30,6 +30,21 @@ public class CreateAsignacionCommandValidator : AbstractValidator<CreateAsignaci
             .NotNull()
             .NotEmpty()
             .WithMessage("Debe adjuntar al menos un documento para registrar la asignación.");
+        RuleForEach(x => x.Adjuntos).ChildRules(adjunto =>
+        {
+            adjunto.RuleFor(a => a.TipoDocumentoId).NotEmpty();
+            adjunto.RuleFor(a => a.TipoOperacionId).NotEmpty();
+            adjunto.RuleFor(a => a.FileBase64)
+                .NotEmpty()
+                .Must(BeValidBase64)
+                .WithMessage("El archivo adjunto no tiene un formato Base64 válido.");
+        });
+    }
+
+    private static bool BeValidBase64(string value)
+    {
+        var buffer = new byte[value.Length];
+        return Convert.TryFromBase64String(value, buffer, out _);
     }
 }
 
@@ -37,13 +52,22 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 {
     public async Task<Result<Guid>> Handle(CreateAsignacionCommand request, CancellationToken cancellationToken)
     {
-        var vehiculo = await unitOfWork.Query<Domain.Entities.Recursos.Vehiculo>()
-            .FirstAsync(v => v.Id == request.VehiculoId, cancellationToken);
+        var personaExists = await unitOfWork.Query<Persona>()
+            .AnyAsync(p => p.Id == request.PersonaId, cancellationToken);
 
-        if (vehiculo is null)
+        if (!personaExists)
         {
-            return Result.Failure<Guid>(VehiculoErrors.NotFound(request.VehiculoId));
-        }        
+            return Result.Failure<Guid>(AsignacionErrors.PersonaNotFound(request.PersonaId));
+        }
+
+        var vehiculoResult = await unitOfWork.VehiculoRepository.GetById(request.VehiculoId, cancellationToken);
+
+        if (vehiculoResult.IsFailure)
+        {
+            return Result.Failure<Guid>(vehiculoResult.Error);
+        }
+
+        var vehiculo = vehiculoResult.Value;
 
         if (!vehiculo.Disponible)
         {
@@ -62,6 +86,16 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         vehiculo.Disponible = false;
 
         await unitOfWork.AsignacionRepository.Create(asignacion, cancellationToken);
+
+        // El Id de la asignación se genera al agregarla al contexto, por eso los adjuntos se crean después.
+        asignacion.Adjuntos = request.Adjuntos.Select(x => new Adjunto
+        {
+            TipoDocumentoId = x.TipoDocumentoId,
+            TipoOperacionId = x.TipoOperacionId,
+            IdentificadorOperacion = asignacion.Id,
+            File = Convert.FromBase64String(x.FileBase64),
+        }).ToList();
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result.Success(asignacion.Id);

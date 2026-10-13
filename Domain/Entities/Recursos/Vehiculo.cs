@@ -34,7 +34,7 @@ namespace Domain.Entities.Recursos
 
         public override string ToString()
         {
-            return $"{Matricula} | {Marca.Nombre} | {Modelo.Nombre}";
+            return $"{Matricula} | {Marca?.Nombre} | {Modelo?.Nombre}";
         }
 
     }

@@ -16,5 +16,14 @@ namespace Infraestructure.Repositories.Recursos
         {
             await context.Vehiculos.AddAsync(vehiculo, cancellationToken);
         }
+
+        public async Task<Result<Vehiculo>> GetById(Guid id, CancellationToken cancellationToken)
+        {
+            var vehiculo = await context.Vehiculos.FindAsync([id], cancellationToken);
+
+            return vehiculo is not null
+                ? Result.Success(vehiculo)
+                : Result.Failure<Vehiculo>(VehiculoErrors.NotFound(id));
+        }
     }
 }
