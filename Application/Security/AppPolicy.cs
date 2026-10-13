@@ -7,5 +7,7 @@ public enum AppPolicy
     CanManagePolizas,
     CanManageCombustible,
     CanManageOrganizacion,
-    CanManageUsuarios
+    CanManageUsuarios,
+    /// <summary>Personalización del frontend; solo Administrador.</summary>
+    CanManageConfiguracion
 }

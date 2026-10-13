@@ -88,6 +88,8 @@ namespace Infraestructure
                     p => p.RequireRole(AppPermission.GestionOrganizacion.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManageUsuarios.ToString(),
                     p => p.RequireRole(AppPermission.GestionUsuarios.ToString(), AppPermission.Administrador.ToString()));
+                options.AddPolicy(AppPolicy.CanManageConfiguracion.ToString(),
+                    p => p.RequireRole(AppPermission.Administrador.ToString()));
             });
 
             services.AddMemoryCache();            

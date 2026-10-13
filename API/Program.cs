@@ -41,6 +41,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddApplicationServices();
 builder.Services.AddInfraestructureServices(builder.Configuration);
 
+// Orígenes del frontend (Cors:Origenes). Content-Disposition se expone para que el navegador
+// pueda leer el nombre de los reportes Excel descargados.
+const string CorsFrontend = "Frontend";
+var origenes = builder.Configuration.GetSection("Cors:Origenes").Get<string[]>() ?? [];
+builder.Services.AddCors(options => options.AddPolicy(CorsFrontend, policy => policy
+    .WithOrigins(origenes)
+    .AllowAnyHeader()
+    .AllowAnyMethod()
+    .WithExposedHeaders("Content-Disposition")));
+
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
@@ -62,6 +72,7 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
+app.UseCors(CorsFrontend);
 app.UseAuthentication();
 app.UseAuthorization();
 

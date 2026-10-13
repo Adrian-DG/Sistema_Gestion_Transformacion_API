@@ -1,4 +1,5 @@
 ﻿using Domain.Entities.Combustible;
+using Domain.Entities.Configuracion;
 using Domain.Entities.Historico;
 using Domain.Entities.Misc;
 using Domain.Entities.Organizacion;
@@ -125,6 +126,28 @@ namespace Infraestructure.Data
                 e.HasIndex(p => p.Identificacion).IsUnique();
             });
 
+            // Configuration entities
+            builder.Entity<Apariencia>(e =>
+            {
+                var colores = new[] { "ColorPrimario", "ColorSecundario", "ColorBotonPrimario", "ColorBotonSecundario", "ColorBotonPeligro" };
+                e.ToTable("Apariencia", "configuracion", t =>
+                {
+                    foreach (var color in colores)
+                    {
+                        t.HasCheckConstraint($"CK_Apariencia_{color}", $"[{color}] LIKE '#[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]'");
+                    }
+                });
+                foreach (var color in colores)
+                {
+                    e.Property<string>(color).HasMaxLength(7).IsUnicode(false);
+                }
+                e.Property(a => a.NombreSistema).HasMaxLength(150);
+                e.Property(a => a.NombreCorto).HasMaxLength(30);
+                e.Property(a => a.NombreInstitucion).HasMaxLength(200);
+                e.Property(a => a.LogoContentType).HasMaxLength(50);
+                e.Property(a => a.LogoNombreArchivo).HasMaxLength(260);
+            });
+
             // Resource entities
             builder.Entity<Vehiculo>(e =>
             {
@@ -154,6 +177,7 @@ namespace Infraestructure.Data
             RangoSeeder.Seed(builder);
             var marcas = MarcaSeeder.Seed(builder);
             ModeloSeeder.Seed(builder, marcas);
+            AparienciaSeeder.Seed(builder);
             #endregion
         }
 
@@ -181,6 +205,8 @@ namespace Infraestructure.Data
         public DbSet<SolicitudTicket> SolicitudesTicket { get; set; }
         public DbSet<TicketCombustible> Tickets { get; set; }
         public DbSet<MovimientoCombustible> MovimientosCombustible { get; set; }
+
+        public DbSet<Apariencia> Apariencia { get; set; }
 
         #endregion
 
