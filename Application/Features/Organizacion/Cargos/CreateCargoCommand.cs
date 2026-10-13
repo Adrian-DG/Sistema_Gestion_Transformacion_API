@@ -7,7 +7,8 @@ using MediatR;
 
 namespace Application.Features.Organizacion.Cargos;
 
-public record CreateCargoCommand(string Nombre, Guid DependenciaId, Guid? TitularId) : IRequest<Result<Guid>>;
+/// <param name="TitularDesde">Desde cuándo ocupa el cargo el titular; por defecto, ahora.</param>
+public record CreateCargoCommand(string Nombre, Guid DependenciaId, Guid? TitularId, DateTime? TitularDesde = null) : IRequest<Result<Guid>>;
 
 public class CreateCargoCommandValidator : AbstractValidator<CreateCargoCommand>
 {
@@ -15,6 +16,8 @@ public class CreateCargoCommandValidator : AbstractValidator<CreateCargoCommand>
     {
         RuleFor(x => x.Nombre).NotEmpty().MaximumLength(150);
         RuleFor(x => x.DependenciaId).NotEmpty();
+        RuleFor(x => x.TitularDesde).LessThanOrEqualTo(_ => DateTime.Now)
+            .WithMessage("La fecha de inicio del titular no puede ser futura.");
     }
 }
 
@@ -39,7 +42,7 @@ public class CreateCargoCommandHandler(IUnitOfWork uow) : IRequestHandler<Create
             Status = true
         };
 
-        cargo.CambiarTitular(request.TitularId, DateTime.Now);
+        cargo.CambiarTitular(request.TitularId, request.TitularDesde ?? DateTime.Now);
 
         await uow.AddAsync(cargo, cancellationToken);
         await uow.SaveChangesAsync(cancellationToken);

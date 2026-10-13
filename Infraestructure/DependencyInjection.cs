@@ -2,6 +2,8 @@
 using Application.Contracts;
 using Application.Contracts.Authentication;
 using Application.Contracts.Externos;
+using Application.Contracts.Reportes;
+using Infraestructure.Reportes;
 using Application.Contracts.Historico;
 using Application.Contracts.Misc;
 using Application.Contracts.Recursos;
@@ -100,6 +102,8 @@ namespace Infraestructure
             services.AddScoped<IAsignacionRepository, AsignacionRepository>();
             services.AddScoped<IPolizaRepository, PolizaRepository>();
             services.AddScoped(typeof(ICatalogRepository<>), typeof(CatalogRepository<>));
+
+            services.AddSingleton<IExcelReportGenerator, ClosedXmlReportGenerator>();
 
             // Sistemas externos (Dapper)
             services.AddSingleton<ISipffaaConnectionFactory, SipffaaConnectionFactory>();
