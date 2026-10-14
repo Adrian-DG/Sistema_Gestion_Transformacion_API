@@ -135,7 +135,7 @@ public class GetEntradasPiezaQueryHandler(IUnitOfWork uow)
 {
     public async Task<Result<PagedData<EntradaPiezaViewModel>>> Handle(FiltroEntradasPiezaQuery request, CancellationToken cancellationToken)
     {
-        var adjuntos = uow.Query<Adjunto>().Where(a => a.TipoOperacionId == TiposOperacion.EntradaPieza && a.Status);
+        var adjuntos = uow.Query<Adjunto>().Where(a => a.TipoOperacionId == TiposOperacion.EntradaPieza);
         var query = uow.Query<EntradaPieza>().Where(e => e.Status);
 
         if (!string.IsNullOrWhiteSpace(request.Param))

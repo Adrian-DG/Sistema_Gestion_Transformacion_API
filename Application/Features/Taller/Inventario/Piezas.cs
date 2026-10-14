@@ -15,6 +15,7 @@ public class PiezaViewModel
 {
     public Guid Id { get; set; }
     public required string Codigo { get; set; }
+    public string? CodigoBarras { get; set; }
     public required string Nombre { get; set; }
     public string? Descripcion { get; set; }
     public required string UnidadMedida { get; set; }
@@ -25,7 +26,7 @@ public class PiezaViewModel
     public bool Activo { get; set; }
 }
 
-/// <summary>Busca por código, nombre o descripción; <see cref="SoloBajoMinimo"/> deja las que hay que reponer.</summary>
+/// <summary>Busca por código, código de barras, nombre o descripción; <see cref="SoloBajoMinimo"/> deja las que hay que reponer.</summary>
 public record FiltroPiezasQuery : PaginationFilterQuery<PiezaViewModel>
 {
     public bool? Activo { get; set; }
@@ -51,6 +52,7 @@ public class GetPiezasQueryHandler(IUnitOfWork uow) : IRequestHandler<FiltroPiez
             var texto = request.Param.Trim();
             piezas = piezas.Where(p =>
                 p.Codigo.Contains(texto) ||
+                (p.CodigoBarras != null && p.CodigoBarras.Contains(texto)) ||
                 p.Nombre.Contains(texto) ||
                 (p.Descripcion != null && p.Descripcion.Contains(texto)));
         }
@@ -59,6 +61,7 @@ public class GetPiezasQueryHandler(IUnitOfWork uow) : IRequestHandler<FiltroPiez
         {
             Id = p.Id,
             Codigo = p.Codigo,
+            CodigoBarras = p.CodigoBarras,
             Nombre = p.Nombre,
             Descripcion = p.Descripcion,
             UnidadMedida = p.UnidadMedida,
@@ -87,6 +90,8 @@ public class PiezaCatalogoViewModel
 {
     public Guid Id { get; set; }
     public required string Codigo { get; set; }
+    /// <summary>Para ubicar la pieza al escanearla.</summary>
+    public string? CodigoBarras { get; set; }
     public required string Nombre { get; set; }
     public required string UnidadMedida { get; set; }
     public decimal Existencia { get; set; }
@@ -108,6 +113,7 @@ public class GetPiezasCatalogoQueryHandler(IUnitOfWork uow)
             {
                 Id = p.Id,
                 Codigo = p.Codigo,
+                CodigoBarras = p.CodigoBarras,
                 Nombre = p.Nombre,
                 UnidadMedida = p.UnidadMedida,
                 Existencia = movimientos
@@ -127,14 +133,15 @@ public interface IDatosPieza
     string? Descripcion { get; }
     string UnidadMedida { get; }
     decimal ExistenciaMinima { get; }
+    string? CodigoBarras { get; }
 }
 
 /// <summary>Registra una pieza sin existencia; entra al inventario con una entrada o una compra directa.</summary>
-public record CreatePiezaCommand(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima)
+public record CreatePiezaCommand(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, string? CodigoBarras = null)
     : IRequest<Result<Guid>>, IDatosPieza;
 
 /// <summary>Actualiza la pieza; <paramref name="Activo"/> en false la desactiva (conserva su kardex).</summary>
-public record UpdatePiezaCommand(Guid Id, string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo)
+public record UpdatePiezaCommand(Guid Id, string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null)
     : IRequest<Result>, IDatosPieza;
 
 public class DatosPiezaValidator<T> : AbstractValidator<T> where T : IDatosPieza
@@ -146,6 +153,13 @@ public class DatosPiezaValidator<T> : AbstractValidator<T> where T : IDatosPieza
         RuleFor(x => x.Descripcion).MaximumLength(500);
         RuleFor(x => x.UnidadMedida).NotEmpty().MaximumLength(30);
         RuleFor(x => x.ExistenciaMinima).GreaterThanOrEqualTo(0).PrecisionScale(12, 2, true);
+        // Lo que envía el lector: caracteres imprimibles sin espacios (EAN/UPC, Code 128, Code 39…).
+        // Se valida ya recortado: algunos lectores agregan un espacio o un salto de línea al final.
+        RuleFor(x => x.CodigoBarras)
+            .Must(c => c!.Trim().Length <= 64).WithMessage("El código de barras debe tener un máximo de 64 caracteres.")
+            .Must(c => System.Text.RegularExpressions.Regex.IsMatch(c!.Trim(), @"^[\x21-\x7E]+$"))
+            .WithMessage("El código de barras solo admite letras, números y símbolos, sin espacios.")
+            .When(x => !string.IsNullOrWhiteSpace(x.CodigoBarras));
     }
 }
 
@@ -164,6 +178,9 @@ public class PiezaCommandsHandler(IUnitOfWork uow) :
         {
             return Result.Failure<Guid>(InventarioPiezasErrors.CodigoDuplicado(codigo));
         }
+
+        var barras = await ValidarCodigoBarrasAsync(request.CodigoBarras, null, cancellationToken);
+        if (barras.IsFailure) return Result.Failure<Guid>(barras.Error);
 
         var pieza = new Pieza { Codigo = codigo, Nombre = request.Nombre, UnidadMedida = request.UnidadMedida, Status = true };
         Aplicar(pieza, request, codigo);
@@ -184,6 +201,9 @@ public class PiezaCommandsHandler(IUnitOfWork uow) :
             return Result.Failure(InventarioPiezasErrors.CodigoDuplicado(codigo));
         }
 
+        var barras = await ValidarCodigoBarrasAsync(request.CodigoBarras, request.Id, cancellationToken);
+        if (barras.IsFailure) return barras;
+
         Aplicar(pieza, request, codigo);
         pieza.Status = request.Activo;
 
@@ -191,9 +211,26 @@ public class PiezaCommandsHandler(IUnitOfWork uow) :
         return Result.Success();
     }
 
+    /// <summary>El código de barras identifica la pieza al escanearla: no puede repetirse, ni en piezas desactivadas.</summary>
+    private async Task<Result> ValidarCodigoBarrasAsync(string? codigoBarras, Guid? excluirId, CancellationToken cancellationToken)
+    {
+        var barras = NormalizarCodigoBarras(codigoBarras);
+        if (barras is null) return Result.Success();
+
+        var otra = await uow.Query<Pieza>()
+            .Where(p => p.CodigoBarras == barras && p.Id != excluirId)
+            .Select(p => p.Nombre)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return otra is null ? Result.Success() : Result.Failure(InventarioPiezasErrors.CodigoBarrasDuplicado(barras, otra));
+    }
+
+    private static string? NormalizarCodigoBarras(string? valor) => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+
     private static void Aplicar(Pieza pieza, IDatosPieza datos, string codigo)
     {
         pieza.Codigo = codigo;
+        pieza.CodigoBarras = NormalizarCodigoBarras(datos.CodigoBarras);
         pieza.Nombre = datos.Nombre.Trim();
         pieza.Descripcion = string.IsNullOrWhiteSpace(datos.Descripcion) ? null : datos.Descripcion.Trim();
         pieza.UnidadMedida = datos.UnidadMedida.Trim();
@@ -259,5 +296,33 @@ public class GetMovimientosPiezaQueryHandler(IUnitOfWork uow)
             .ToListAsync(cancellationToken);
 
         return Result.Success(new PagedData<MovimientoPiezaViewModel>(rows, request.PageSize, request.PageNumber, total));
+    }
+}
+
+public record GetPiezaQuery(Guid Id) : IRequest<Result<PiezaViewModel>>;
+
+public class GetPiezaQueryHandler(IUnitOfWork uow) : IRequestHandler<GetPiezaQuery, Result<PiezaViewModel>>
+{
+    public async Task<Result<PiezaViewModel>> Handle(GetPiezaQuery request, CancellationToken cancellationToken)
+    {
+        var pieza = await uow.Query<Pieza>()
+            .Where(p => p.Id == request.Id)
+            .Select(p => new PiezaViewModel
+            {
+                Id = p.Id,
+                Codigo = p.Codigo,
+                CodigoBarras = p.CodigoBarras,
+                Nombre = p.Nombre,
+                Descripcion = p.Descripcion,
+                UnidadMedida = p.UnidadMedida,
+                ExistenciaMinima = p.ExistenciaMinima,
+                Activo = p.Status
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (pieza is null) return Result.Failure<PiezaViewModel>(InventarioPiezasErrors.PiezaNotFound(request.Id));
+
+        pieza.Existencia = (await uow.ObtenerExistenciaAsync(pieza.Id, cancellationToken)).Existencia;
+        pieza.BajoMinimo = pieza.Existencia < pieza.ExistenciaMinima;
+        return Result.Success(pieza);
     }
 }

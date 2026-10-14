@@ -213,3 +213,31 @@ public class MecanicoCommandsHandler(IUnitOfWork uow) :
         return Result.Success();
     }
 }
+
+public record GetMecanicoQuery(Guid Id) : IRequest<Result<MecanicoViewModel>>;
+
+public class GetMecanicoQueryHandler(IUnitOfWork uow) : IRequestHandler<GetMecanicoQuery, Result<MecanicoViewModel>>
+{
+    public async Task<Result<MecanicoViewModel>> Handle(GetMecanicoQuery request, CancellationToken cancellationToken)
+    {
+        var mecanico = await uow.Query<Mecanico>()
+            .Where(m => m.Id == request.Id)
+            .Select(m => new MecanicoViewModel
+            {
+                Id = m.Id,
+                PersonaId = m.PersonaId,
+                Identificacion = m.Persona!.Identificacion,
+                NombreCompleto = m.Persona.Apellido + " " + m.Persona.Nombre,
+                TipoPersona = m.Persona.TipoPersona.ToString(),
+                Rango = m.Persona.Rango != null ? m.Persona.Rango.Nombre : null,
+                Telefono = m.Persona.Telefono,
+                Especialidad = m.Especialidad,
+                Activo = m.Status
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return mecanico is null
+            ? Result.Failure<MecanicoViewModel>(MecanicoErrors.NotFound(request.Id))
+            : Result.Success(mecanico);
+    }
+}

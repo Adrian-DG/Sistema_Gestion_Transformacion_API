@@ -9,6 +9,8 @@ namespace Domain.Entities.Taller
     public class Pieza : NamedEntityMetadata, IAuditableEntityMetadata
     {
         public required string Codigo { get; set; }
+        /// <summary>Código de barras del fabricante o del proveedor (opcional); único cuando se indica.</summary>
+        public string? CodigoBarras { get; set; }
         public string? Descripcion { get; set; }
         /// <summary>Unidad, galón, litro, juego…</summary>
         public required string UnidadMedida { get; set; }

@@ -134,6 +134,14 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        [HttpGet("mecanicos/{id:Guid}")]
+        [AppAuthorize(AppPolicy.CanManageTaller)]
+        public async Task<IActionResult> GetMecanico([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetMecanicoQuery(id), cancellationToken);
+            return HandleResult(result);
+        }
+
         [HttpPut("mecanicos/{id:Guid}")]
         [AppAuthorize(AppPolicy.CanManageTaller)]
         public async Task<IActionResult> UpdateMecanico([FromRoute] Guid id, [FromBody] DatosMecanicoRequest request, CancellationToken cancellationToken)

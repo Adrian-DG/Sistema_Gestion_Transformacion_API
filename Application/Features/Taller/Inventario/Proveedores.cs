@@ -182,3 +182,30 @@ public class ProveedorCommandsHandler(IUnitOfWork uow) :
         return Result.Success();
     }
 }
+
+public record GetProveedorQuery(Guid Id) : IRequest<Result<ProveedorViewModel>>;
+
+public class GetProveedorQueryHandler(IUnitOfWork uow) : IRequestHandler<GetProveedorQuery, Result<ProveedorViewModel>>
+{
+    public async Task<Result<ProveedorViewModel>> Handle(GetProveedorQuery request, CancellationToken cancellationToken)
+    {
+        var proveedor = await uow.Query<Proveedor>()
+            .Where(p => p.Id == request.Id)
+            .Select(p => new ProveedorViewModel
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Rnc = p.Rnc,
+                Telefono = p.Telefono,
+                Correo = p.Correo,
+                Direccion = p.Direccion,
+                Contacto = p.Contacto,
+                Activo = p.Status
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return proveedor is null
+            ? Result.Failure<ProveedorViewModel>(InventarioPiezasErrors.ProveedorNotFound(request.Id))
+            : Result.Success(proveedor);
+    }
+}

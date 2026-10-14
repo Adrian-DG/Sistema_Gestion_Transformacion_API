@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Infraestructure.Data.Seed.Demo
 {
     /// <summary>
-    /// Datos de ejemplo para desarrollo y demostraciones: personas, vehículos, asignaciones, pólizas y
+    /// Datos de ejemplo para desarrollo y demostraciones: personas, vehículos, asignaciones, pólizas, taller y
     /// usuarios con distintos permisos. No usa HasData para que estos datos nunca lleguen a las migraciones
     /// (y por tanto a producción); se ejecuta al iniciar solo si <c>DatosDemo:Habilitado</c> es true.
     /// Las cédulas usan la serie 999, que no corresponde a cédulas reales.
@@ -47,14 +47,15 @@ namespace Infraestructure.Data.Seed.Demo
                 var vehiculos = VehiculoDemoSeeder.Seed(demo);
                 var asignaciones = AsignacionDemoSeeder.Seed(demo, personas, vehiculos);
                 var polizas = PolizaDemoSeeder.Seed(demo, vehiculos);
+                var ordenesTaller = TallerDemoSeeder.Seed(demo, personas, vehiculos);
 
                 await context.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 context.ChangeTracker.Clear();
 
                 logger.LogInformation(
-                    "Datos de ejemplo cargados: {Personas} personas, {Vehiculos} vehículos, {Asignaciones} asignaciones y {Polizas} pólizas.",
-                    personas.Todas.Count, vehiculos.Todos.Count, asignaciones, polizas);
+                    "Datos de ejemplo cargados: {Personas} personas, {Vehiculos} vehículos, {Asignaciones} asignaciones, {Polizas} pólizas y {Ordenes} órdenes de taller.",
+                    personas.Todas.Count, vehiculos.Todos.Count, asignaciones, polizas, ordenesTaller);
             }
 
             await UsuarioDemoSeeder.SeedAsync(provider, configuration[$"{Seccion}:Password"], logger, cancellationToken);

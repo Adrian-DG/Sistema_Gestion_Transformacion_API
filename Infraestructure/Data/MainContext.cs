@@ -138,6 +138,8 @@ namespace Infraestructure.Data
                 e.ToTable("Piezas", "taller", t => t.HasCheckConstraint("CK_Piezas_ExistenciaMinima", "[ExistenciaMinima] >= 0"));
                 e.HasIndex(p => p.Codigo).IsUnique();
                 e.Property(p => p.Codigo).HasMaxLength(30);
+                e.HasIndex(p => p.CodigoBarras).IsUnique().HasFilter("[CodigoBarras] IS NOT NULL");
+                e.Property(p => p.CodigoBarras).HasMaxLength(64).IsUnicode(false);
                 e.Property(p => p.Nombre).HasMaxLength(200);
                 e.Property(p => p.Descripcion).HasMaxLength(500);
                 e.Property(p => p.UnidadMedida).HasMaxLength(30);
@@ -179,6 +181,7 @@ namespace Infraestructure.Data
                 e.ToTable("Solicitudes", "taller");
                 e.HasIndex(s => s.Numero).IsUnique();
                 e.HasIndex(s => new { s.VehiculoId, s.Estatus });
+                e.HasIndex(s => s.FechaSolicitud);
                 e.Property(s => s.Numero).HasMaxLength(20);
                 e.Property(s => s.Motivo).HasMaxLength(1000);
                 e.Property(s => s.Diagnostico).HasMaxLength(2000);

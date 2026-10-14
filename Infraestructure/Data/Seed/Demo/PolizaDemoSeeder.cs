@@ -45,7 +45,7 @@ namespace Infraestructure.Data.Seed.Demo
             Poliza(v.Ranger, Aseguradoras.Mapfre, hoy.AddMonths(-14));
             Poliza(v.Ranger, Aseguradoras.Reservas, hoy.AddMonths(-2));
 
-            // El vehículo fuera de servicio queda sin póliza.
+            // El vehículo en mantenimiento queda sin póliza.
             return cantidad;
         }
     }

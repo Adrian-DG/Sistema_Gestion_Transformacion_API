@@ -165,6 +165,7 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
                 Numero = SolicitudTaller.FormatearNumero(anio, secuencia),
                 Tipo = request.Tipo,
                 Estatus = EstatusSolicitudTaller.Pendiente,
+                FechaSolicitud = DateTime.Now,
                 VehiculoId = request.VehiculoId,
                 SolicitantePersonaId = request.SolicitantePersonaId,
                 Motivo = request.Motivo.Trim(),

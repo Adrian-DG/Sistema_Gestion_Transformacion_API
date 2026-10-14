@@ -27,6 +27,8 @@ namespace Domain.Entities.Taller
         public Guid VehiculoId { get; set; }
         public virtual Vehiculo? Vehiculo { get; set; }
 
+        public DateTime FechaSolicitud { get; set; }
+
         public Guid SolicitantePersonaId { get; set; }
         public virtual Persona? SolicitantePersona { get; set; }
 

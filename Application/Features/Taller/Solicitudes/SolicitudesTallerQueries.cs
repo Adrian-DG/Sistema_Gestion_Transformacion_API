@@ -86,7 +86,7 @@ internal static class SolicitudesTallerProyeccion
             SolicitanteCedula = s.SolicitantePersona.Identificacion,
             Motivo = s.Motivo,
             Kilometraje = s.Kilometraje,
-            FechaSolicitud = s.CreatedAt,
+            FechaSolicitud = s.FechaSolicitud,
             MecanicoId = s.MecanicoId,
             Mecanico = s.Mecanico != null ? s.Mecanico.Persona!.Apellido + " " + s.Mecanico.Persona.Nombre : null,
             FechaIngreso = s.FechaIngreso,
@@ -127,7 +127,7 @@ public class GetSolicitudesTallerQueryHandler(IUnitOfWork uow)
 
         var total = await query.CountAsync(cancellationToken);
         var rows = await query
-            .OrderByDescending(s => s.CreatedAt)
+            .OrderByDescending(s => s.FechaSolicitud)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .AViewModel()
@@ -194,7 +194,7 @@ public class GetSolicitudTallerQueryHandler(IUnitOfWork uow)
 
         var comprasIds = movimientos.Where(m => m.Concepto == ConceptoMovimientoPieza.CompraDirecta).Select(m => m.Id).ToList();
         var recibos = await uow.Query<Adjunto>()
-            .Where(a => a.TipoOperacionId == TiposOperacion.CompraPieza && a.Status && comprasIds.Contains(a.IdentificadorOperacion))
+            .Where(a => a.TipoOperacionId == TiposOperacion.CompraPieza && comprasIds.Contains(a.IdentificadorOperacion))
             .Select(a => new { a.IdentificadorOperacion, Adjunto = new AdjuntoResumenViewModel { Id = a.Id, NombreArchivo = a.NombreArchivo, ContentType = a.ContentType } })
             .ToListAsync(cancellationToken);
 
@@ -275,7 +275,7 @@ public class GetHistorialMantenimientosQueryHandler(IUnitOfWork uow, IUsuarioSer
 
         var solicitudes = await uow.Query<SolicitudTaller>()
             .Where(s => s.VehiculoId == request.VehiculoId)
-            .OrderByDescending(s => s.CreatedAt)
+            .OrderByDescending(s => s.FechaSolicitud)
             .AViewModel()
             .ToListAsync(cancellationToken);
 
@@ -337,7 +337,7 @@ public class GetAdjuntoTallerQueryHandler(IUnitOfWork uow) : IRequestHandler<Get
     public async Task<Result<ArchivoAdjunto>> Handle(GetAdjuntoTallerQuery request, CancellationToken cancellationToken)
     {
         var archivo = await uow.Query<Adjunto>()
-            .Where(a => a.Id == request.Id && a.Status &&
+            .Where(a => a.Id == request.Id &&
                 (a.TipoOperacionId == TiposOperacion.EntradaPieza || a.TipoOperacionId == TiposOperacion.CompraPieza))
             .Select(a => new ArchivoAdjunto(a.File, a.ContentType, a.NombreArchivo))
             .FirstOrDefaultAsync(cancellationToken);

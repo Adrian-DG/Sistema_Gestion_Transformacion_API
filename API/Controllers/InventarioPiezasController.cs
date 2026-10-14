@@ -43,13 +43,21 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        [HttpGet("piezas/{id:Guid}")]
+        [AppAuthorize(AppPolicy.CanManageInventarioPiezas)]
+        public async Task<IActionResult> GetPieza([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetPiezaQuery(id), cancellationToken);
+            return HandleResult(result);
+        }
+
         /// <summary>Actualiza la pieza; <c>activo: false</c> la desactiva.</summary>
         [HttpPut("piezas/{id:Guid}")]
         [AppAuthorize(AppPolicy.CanManageInventarioPiezas)]
         public async Task<IActionResult> UpdatePieza([FromRoute] Guid id, [FromBody] DatosPiezaRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdatePiezaCommand(id, request.Codigo, request.Nombre, request.Descripcion,
-                request.UnidadMedida, request.ExistenciaMinima, request.Activo);
+                request.UnidadMedida, request.ExistenciaMinima, request.Activo, request.CodigoBarras);
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
         }
@@ -90,6 +98,14 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        [HttpGet("proveedores/{id:Guid}")]
+        [AppAuthorize(AppPolicy.CanManageInventarioPiezas)]
+        public async Task<IActionResult> GetProveedor([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetProveedorQuery(id), cancellationToken);
+            return HandleResult(result);
+        }
+
         /// <summary>Actualiza el proveedor; <c>activo: false</c> lo desactiva.</summary>
         [HttpPut("proveedores/{id:Guid}")]
         [AppAuthorize(AppPolicy.CanManageInventarioPiezas)]
@@ -120,7 +136,7 @@ namespace API.Controllers
         }
     }
 
-    public record DatosPiezaRequest(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo);
+    public record DatosPiezaRequest(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null);
 
     public record DatosProveedorRequest(string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo);
 }

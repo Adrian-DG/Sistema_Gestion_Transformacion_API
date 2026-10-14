@@ -32,7 +32,7 @@ public static class TallerErrors
     /// </summary>
     public static Error CompraRequerida(string pieza, decimal disponible, decimal faltante) => Error.Conflict(
         "Taller.CompraRequerida",
-        $"Solo hay {disponible:0.##} de '{pieza}' en inventario; registre la compra de las {faltante:0.##} faltantes con su costo y recibo.");
+        $"Solo hay {disponible:0.##} de '{pieza}' en inventario y faltan {faltante:0.##}; registre su compra con el costo y el recibo.");
 
     public static Error CompraInnecesaria(string pieza) => Error.Validation(
         "Taller.CompraInnecesaria",
@@ -48,6 +48,10 @@ public static class InventarioPiezasErrors
     public static Error CodigoDuplicado(string codigo) => Error.Conflict(
         "Pieza.CodigoDuplicado",
         $"Ya existe una pieza con el código '{codigo}'.");
+
+    public static Error CodigoBarrasDuplicado(string codigoBarras, string pieza) => Error.Conflict(
+        "Pieza.CodigoBarrasDuplicado",
+        $"El código de barras '{codigoBarras}' ya está asignado a la pieza '{pieza}'.");
 
     public static Error ProveedorNotFound(Guid id) => Error.NotFound(
         "Proveedor.NotFound",
