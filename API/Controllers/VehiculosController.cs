@@ -1,5 +1,7 @@
 using API.Security;
 using Application.Common.DTO;
+using Application.Features.Historico.Asignaciones;
+using Application.Features.Taller.Solicitudes;
 using Application.Features.Vehiculo;
 using Application.Security;
 using MediatR;
@@ -8,8 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers
 {
     /// <summary>
-    /// Flota de vehículos. No se eliminan: un vehículo fuera de servicio se marca como no disponible
-    /// y conserva sus asignaciones, pólizas y despachos.
+    /// Flota de vehículos. No se eliminan: la baja, que se hace en el taller, los deja inactivos y
+    /// conservan sus asignaciones, pólizas y despachos.
     /// </summary>
     [Route("api/vehiculos")]
     [AppAuthorize(AppPolicy.CanManageVehiculos)]
@@ -35,6 +37,25 @@ namespace API.Controllers
         public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new IDEntityFilterQuery<VehiculoDetalleViewModel>(id), cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>
+        /// Historial de asignaciones del vehículo, la de salida más reciente primero. Admite los mismos
+        /// filtros que api/asignaciones (<c>estatus</c>, <c>param</c>) y solo requiere el permiso de vehículos.
+        /// </summary>
+        [HttpGet("{id:Guid}/asignaciones")]
+        public async Task<IActionResult> GetAsignaciones([FromRoute] Guid id, [FromQuery] FiltroAsignacionesQuery query, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(query with { VehiculoId = id }, cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Historial de mantenimientos: entradas al taller con sus piezas, y reactivaciones.</summary>
+        [HttpGet("{id:Guid}/mantenimientos")]
+        public async Task<IActionResult> GetMantenimientos([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetHistorialMantenimientosQuery(id), cancellationToken);
             return HandleResult(result);
         }
 

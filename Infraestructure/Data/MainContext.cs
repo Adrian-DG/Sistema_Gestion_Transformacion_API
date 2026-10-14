@@ -3,6 +3,7 @@ using Domain.Entities.Configuracion;
 using Domain.Entities.Historico;
 using Domain.Entities.Misc;
 using Domain.Entities.Recursos;
+using Domain.Entities.Taller;
 using Infraestructure.Data.Seed;
 using Infraestructure.Identity.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -117,6 +118,83 @@ namespace Infraestructure.Data
                 e.ToTable("Personas", "historico");
                 e.HasIndex(p => p.Identificacion).IsUnique();
                 e.Property(p => p.Dependencia).HasMaxLength(200);
+            });
+
+            // Workshop entities
+            builder.Entity<Proveedor>(e =>
+            {
+                e.ToTable("Proveedores", "taller");
+                e.HasIndex(p => p.Rnc).IsUnique().HasFilter("[Rnc] IS NOT NULL");
+                e.Property(p => p.Nombre).HasMaxLength(200);
+                e.Property(p => p.Rnc).HasMaxLength(20);
+                e.Property(p => p.Telefono).HasMaxLength(20);
+                e.Property(p => p.Correo).HasMaxLength(150);
+                e.Property(p => p.Direccion).HasMaxLength(300);
+                e.Property(p => p.Contacto).HasMaxLength(150);
+            });
+
+            builder.Entity<Pieza>(e =>
+            {
+                e.ToTable("Piezas", "taller", t => t.HasCheckConstraint("CK_Piezas_ExistenciaMinima", "[ExistenciaMinima] >= 0"));
+                e.HasIndex(p => p.Codigo).IsUnique();
+                e.Property(p => p.Codigo).HasMaxLength(30);
+                e.Property(p => p.Nombre).HasMaxLength(200);
+                e.Property(p => p.Descripcion).HasMaxLength(500);
+                e.Property(p => p.UnidadMedida).HasMaxLength(30);
+                e.Property(p => p.ExistenciaMinima).HasPrecision(12, 2);
+            });
+
+            builder.Entity<EntradaPieza>(e =>
+            {
+                e.ToTable("EntradasPieza", "taller");
+                e.Property(x => x.NumeroFactura).HasMaxLength(50);
+                e.Property(x => x.Observacion).HasMaxLength(500);
+                e.HasIndex(x => x.Fecha);
+            });
+
+            builder.Entity<MovimientoPieza>(e =>
+            {
+                e.ToTable("MovimientosPieza", "taller", t =>
+                {
+                    t.HasCheckConstraint("CK_MovimientosPieza_Cantidad", "[Cantidad] > 0");
+                    t.HasCheckConstraint("CK_MovimientosPieza_Costo", "[CostoUnitario] >= 0");
+                });
+                e.Property(m => m.Cantidad).HasPrecision(12, 2);
+                e.Property(m => m.CostoUnitario).HasPrecision(14, 2);
+                e.Property(m => m.NumeroFactura).HasMaxLength(50);
+                e.HasOne(m => m.EntradaPieza).WithMany(x => x.Lineas).HasForeignKey(m => m.EntradaPiezaId);
+                e.HasOne(m => m.SolicitudTaller).WithMany(s => s.Movimientos).HasForeignKey(m => m.SolicitudTallerId);
+                e.HasIndex(m => new { m.PiezaId, m.Fecha });
+            });
+
+            builder.Entity<Mecanico>(e =>
+            {
+                e.ToTable("Mecanicos", "taller");
+                e.HasIndex(m => m.PersonaId).IsUnique();
+                e.Property(m => m.Especialidad).HasMaxLength(100);
+            });
+
+            builder.Entity<SolicitudTaller>(e =>
+            {
+                e.ToTable("Solicitudes", "taller");
+                e.HasIndex(s => s.Numero).IsUnique();
+                e.HasIndex(s => new { s.VehiculoId, s.Estatus });
+                e.Property(s => s.Numero).HasMaxLength(20);
+                e.Property(s => s.Motivo).HasMaxLength(1000);
+                e.Property(s => s.Diagnostico).HasMaxLength(2000);
+                e.Property(s => s.TrabajoRealizado).HasMaxLength(2000);
+                e.Property(s => s.MotivoRechazoCancelacion).HasMaxLength(500);
+                // Una sola solicitud abierta (Pendiente o EnTaller) por vehículo.
+                e.HasIndex(s => s.VehiculoId).IsUnique()
+                    .HasFilter($"[Estatus] IN ({(int)Domain.Enums.EstatusSolicitudTaller.Pendiente}, {(int)Domain.Enums.EstatusSolicitudTaller.EnTaller})")
+                    .HasDatabaseName("IX_Solicitudes_VehiculoId_Abierta");
+            });
+
+            builder.Entity<ReactivacionVehiculo>(e =>
+            {
+                e.ToTable("ReactivacionesVehiculo", "taller");
+                e.Property(r => r.Motivo).HasMaxLength(1000);
+                e.HasIndex(r => r.VehiculoId);
             });
 
             // Configuration entities
@@ -244,6 +322,14 @@ namespace Infraestructure.Data
         public DbSet<SolicitudTicket> SolicitudesTicket { get; set; }
         public DbSet<TicketCombustible> Tickets { get; set; }
         public DbSet<MovimientoCombustible> MovimientosCombustible { get; set; }
+
+        public DbSet<Proveedor> Proveedores { get; set; }
+        public DbSet<Pieza> Piezas { get; set; }
+        public DbSet<EntradaPieza> EntradasPieza { get; set; }
+        public DbSet<MovimientoPieza> MovimientosPieza { get; set; }
+        public DbSet<Mecanico> Mecanicos { get; set; }
+        public DbSet<SolicitudTaller> SolicitudesTaller { get; set; }
+        public DbSet<ReactivacionVehiculo> ReactivacionesVehiculo { get; set; }
 
         public DbSet<Secuencia> Secuencias { get; set; }
         public DbSet<Apariencia> Apariencia { get; set; }

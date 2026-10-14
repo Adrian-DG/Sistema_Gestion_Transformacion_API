@@ -47,6 +47,7 @@ namespace Infraestructure.Data.Seed
             public static readonly Guid Matricula = new("7f1b4d96-a082-44c5-d367-b20000000004");
             public static readonly Guid Poliza = new("7f1b4d96-a082-44c5-d367-b20000000005");
             public static readonly Guid Factura = new("7f1b4d96-a082-44c5-d367-b20000000006");
+            public static readonly Guid ReciboCompra = new("7f1b4d96-a082-44c5-d367-b20000000007");
         }
 
         public static void Seed(this ModelBuilder builder)
@@ -81,7 +82,8 @@ namespace Infraestructure.Data.Seed
                 new TipoDocumento { Id = TiposDocumento.SolicitudTickets, Nombre = "Solicitud de tickets de combustible", Status = true },
                 new TipoDocumento { Id = TiposDocumento.Matricula, Nombre = "Matrícula", Status = true },
                 new TipoDocumento { Id = TiposDocumento.Poliza, Nombre = "Póliza de seguro", Status = true },
-                new TipoDocumento { Id = TiposDocumento.Factura, Nombre = "Factura", Status = true });
+                new TipoDocumento { Id = TiposDocumento.Factura, Nombre = "Factura", Status = true },
+                new TipoDocumento { Id = TiposDocumento.ReciboCompra, Nombre = "Recibo de compra", Status = true });
         }
     }
 }

@@ -8,5 +8,11 @@ public enum AppPermission
     GestionPolizas,
     GestionCombustible,
     GestionPersonas,
-    GestionUsuarios
+    GestionUsuarios,
+    /// <summary>Solicitudes de taller (ingreso, piezas, cierre) y mecánicos.</summary>
+    GestionTaller,
+    /// <summary>Piezas, proveedores y entradas al inventario del taller.</summary>
+    GestionInventarioPiezas,
+    /// <summary>Reactivación excepcional de vehículos dados de baja.</summary>
+    ReactivarVehiculos
 }

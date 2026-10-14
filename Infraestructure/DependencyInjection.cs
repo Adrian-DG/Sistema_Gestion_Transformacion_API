@@ -88,6 +88,12 @@ namespace Infraestructure
                     p => p.RequireRole(AppPermission.GestionPersonas.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManageUsuarios.ToString(),
                     p => p.RequireRole(AppPermission.GestionUsuarios.ToString(), AppPermission.Administrador.ToString()));
+                options.AddPolicy(AppPolicy.CanManageTaller.ToString(),
+                    p => p.RequireRole(AppPermission.GestionTaller.ToString(), AppPermission.Administrador.ToString()));
+                options.AddPolicy(AppPolicy.CanManageInventarioPiezas.ToString(),
+                    p => p.RequireRole(AppPermission.GestionInventarioPiezas.ToString(), AppPermission.Administrador.ToString()));
+                options.AddPolicy(AppPolicy.CanReactivarVehiculos.ToString(),
+                    p => p.RequireRole(AppPermission.ReactivarVehiculos.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManageConfiguracion.ToString(),
                     p => p.RequireRole(AppPermission.Administrador.ToString()));
             });

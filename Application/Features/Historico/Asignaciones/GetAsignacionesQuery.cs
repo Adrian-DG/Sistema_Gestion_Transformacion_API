@@ -48,10 +48,14 @@ public class AsignacionViewModel
     public int CantidadAdjuntos { get; set; }
 }
 
-/// <summary>Listado paginado; <see cref="Param"/> busca por texto y <see cref="Estatus"/> filtra por estado.</summary>
+/// <summary>
+/// Listado paginado; <see cref="Param"/> busca por texto, <see cref="Estatus"/> filtra por estado y
+/// <see cref="VehiculoId"/> por vehículo (historial de asignaciones del vehículo).
+/// </summary>
 public record FiltroAsignacionesQuery : PaginationFilterQuery<AsignacionViewModel>
 {
     public EstatusSolicitud? Estatus { get; set; }
+    public Guid? VehiculoId { get; set; }
 }
 
 public class FiltroAsignacionesQueryValidator : AbstractValidator<FiltroAsignacionesQuery>

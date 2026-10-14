@@ -12,7 +12,9 @@ namespace Infraestructure.Data.Seed
                 new TipoOperacion { Id = TiposOperacion.Vehiculo, Nombre = "Vehículo", Status = true },
                 new TipoOperacion { Id = TiposOperacion.Asignacion, Nombre = "Asignación de vehículo", Status = true },
                 new TipoOperacion { Id = TiposOperacion.SolicitudTicket, Nombre = "Solicitud de tickets de combustible", Status = true },
-                new TipoOperacion { Id = TiposOperacion.MovimientoCombustible, Nombre = "Movimiento de combustible", Status = true });
+                new TipoOperacion { Id = TiposOperacion.MovimientoCombustible, Nombre = "Movimiento de combustible", Status = true },
+                new TipoOperacion { Id = TiposOperacion.EntradaPieza, Nombre = "Entrada de piezas al inventario", Status = true },
+                new TipoOperacion { Id = TiposOperacion.CompraPieza, Nombre = "Compra de pieza para taller", Status = true });
         }
     }
 }

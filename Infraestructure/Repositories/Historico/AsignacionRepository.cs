@@ -28,6 +28,11 @@ namespace Infraestructure.Repositories.Historico
                 query = query.Where(x => x.Estatus == estatus);
             }
 
+            if (filter.VehiculoId is { } vehiculoId)
+            {
+                query = query.Where(x => x.VehiculoId == vehiculoId);
+            }
+
             if (!string.IsNullOrWhiteSpace(filter.Param))
             {
                 query = query.Where(x =>

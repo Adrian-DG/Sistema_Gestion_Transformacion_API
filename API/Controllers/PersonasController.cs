@@ -38,7 +38,7 @@ namespace API.Controllers
         /// </summary>
         [HttpPost("sipffaa/{cedula}")]
         [AppAuthorize(AppPermission.GestionPersonas, AppPermission.GestionAsignaciones,
-            AppPermission.GestionCombustible, AppPermission.Administrador)]
+            AppPermission.GestionCombustible, AppPermission.GestionTaller, AppPermission.Administrador)]
         public async Task<IActionResult> ImportarDeSipffaa([FromRoute] string cedula, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new ImportarPersonaSipffaaCommand(cedula), cancellationToken);

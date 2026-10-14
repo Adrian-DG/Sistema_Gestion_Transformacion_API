@@ -94,6 +94,16 @@ namespace Infraestructure.Identity
             return Result.Success(usuario);
         }
 
+        public async Task<IReadOnlyDictionary<Guid, string>> GetNombresAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+        {
+            if (ids.Count == 0) return new Dictionary<Guid, string>();
+
+            return await context.Users.AsNoTracking()
+                .Where(u => ids.Contains(u.Id))
+                .Select(u => new { u.Id, Nombre = (u.Rango != null ? u.Rango.Nombre + " " : "") + u.Apellido + " " + u.Nombre })
+                .ToDictionaryAsync(u => u.Id, u => u.Nombre, cancellationToken);
+        }
+
         public async Task<IReadOnlyList<RolViewModel>> GetRolesAsync(CancellationToken cancellationToken)
         {
             return await context.Roles.AsNoTracking()

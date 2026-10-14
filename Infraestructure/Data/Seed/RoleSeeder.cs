@@ -19,6 +19,9 @@ namespace Infraestructure.Data.Seed
             [AppPermission.GestionCombustible] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000005"), "Tickets, compras y despachos de combustible"),
             [AppPermission.GestionPersonas] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000006"), "Registro de solicitantes, beneficiarios y receptores"),
             [AppPermission.GestionUsuarios] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000007"), "Administración de usuarios y permisos"),
+            [AppPermission.GestionTaller] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000008"), "Solicitudes de taller y mecánicos"),
+            [AppPermission.GestionInventarioPiezas] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000009"), "Piezas, proveedores y entradas al inventario del taller"),
+            [AppPermission.ReactivarVehiculos] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000010"), "Reactivación excepcional de vehículos dados de baja"),
         };
 
         public static void Seed(this ModelBuilder builder)

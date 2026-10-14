@@ -11,6 +11,8 @@ public interface IUsuarioService
     Task<PagedData<UsuarioViewModel>> GetAsync(PaginationFilterQuery<UsuarioViewModel> filter, bool? activo, CancellationToken cancellationToken);
     Task<Result<UsuarioDetalleViewModel>> GetByIdAsync(Guid id, CancellationToken cancellationToken);
     Task<IReadOnlyList<RolViewModel>> GetRolesAsync(CancellationToken cancellationToken);
+    /// <summary>"Rango Apellido Nombre" de los usuarios indicados (ej. quién autorizó una operación).</summary>
+    Task<IReadOnlyDictionary<Guid, string>> GetNombresAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
     Task<Result<Guid>> CreateAsync(DatosUsuario datos, string password, IReadOnlyList<string> roles, CancellationToken cancellationToken);
     Task<Result> UpdateAsync(Guid id, DatosUsuario datos, CancellationToken cancellationToken);

@@ -8,6 +8,9 @@ public enum AppPolicy
     CanManageCombustible,
     CanManagePersonas,
     CanManageUsuarios,
+    CanManageTaller,
+    CanManageInventarioPiezas,
+    CanReactivarVehiculos,
     /// <summary>Personalización del frontend; solo Administrador.</summary>
     CanManageConfiguracion
 }
