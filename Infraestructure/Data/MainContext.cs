@@ -194,6 +194,8 @@ namespace Infraestructure.Data
                 e.HasIndex(v => v.Placa).IsUnique();
                 e.HasIndex(v => v.Chasis).IsUnique();
                 e.HasIndex(v => v.Matricula).IsUnique();
+                e.HasIndex(v => v.Ficha).IsUnique().HasFilter("[Ficha] IS NOT NULL");
+                e.Property(v => v.Ficha).HasMaxLength(20);
             });
 
 

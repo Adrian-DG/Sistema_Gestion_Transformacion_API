@@ -23,7 +23,7 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
-        /// <summary>Busca por placa, matrícula, chasis, marca o modelo (<c>param</c>).</summary>
+        /// <summary>Busca por placa, ficha, matrícula, chasis, marca o modelo (<c>param</c>).</summary>
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] PaginationFilterQuery<VehiculoViewModel> query, CancellationToken cancellationToken)
         {
@@ -38,12 +38,12 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
-        /// <summary>Actualiza el vehículo; <c>disponible: false</c> lo deja fuera de servicio.</summary>
+        /// <summary>Actualiza los datos del vehículo; su estado lo cambia el taller.</summary>
         [HttpPut("{id:Guid}")]
         public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] DatosVehiculoRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdateVehiculoCommand(id, request.Chasis, request.Matricula, request.Placa, request.Fabricacion,
-                request.MarcaId, request.ModeloId, request.TipoId, request.ColorId, request.Disponible);
+                request.MarcaId, request.ModeloId, request.TipoId, request.ColorId, request.Ficha);
 
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
@@ -59,5 +59,5 @@ namespace API.Controllers
         Guid ModeloId,
         Guid TipoId,
         Guid ColorId,
-        bool Disponible);
+        string? Ficha = null);
 }

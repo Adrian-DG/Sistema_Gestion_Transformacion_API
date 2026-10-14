@@ -13,17 +13,18 @@ public class VehiculoViewModel
     public required string Chasis { get; set; }
     public required string Matricula { get; set; }
     public required string Placa { get; set; }
+    public string? Ficha { get; set; }
     public required string Marca { get; set; }
     public required string Modelo { get; set; }
     public required int Fabricacion { get; set; }
     public required string Color { get; set; }
     public required string Tipo { get; set; }
 
-    /// <summary>False cuando el vehículo está fuera de servicio.</summary>
-    public bool Disponible { get; set; }
+    /// <summary>Disponible, NoDisponible (en misión), EnMantenimiento o Inactivo; ver EstatusVehiculos.</summary>
+    public string Estatus { get; set; } = string.Empty;
 }
 
-/// <summary>Busca por placa, matrícula, chasis, marca o modelo.</summary>
+/// <summary>Busca por placa, ficha, matrícula, chasis, marca o modelo.</summary>
 public class GetVehiculosQuery(IUnitOfWork uow)
     : IRequestHandler<PaginationFilterQuery<VehiculoViewModel>, Result<PagedData<VehiculoViewModel>>>
 {
@@ -38,12 +39,15 @@ public class GetVehiculosQuery(IUnitOfWork uow)
             var texto = request.Param.Trim();
             query = query.Where(v =>
                 v.Placa.Contains(texto) ||
+                (v.Ficha != null && v.Ficha.Contains(texto)) ||
                 v.Matricula.Contains(texto) ||
                 v.Chasis.Contains(texto) ||
                 v.Marca!.Nombre.Contains(texto) ||
                 v.Modelo!.Nombre.Contains(texto));
         }
 
+        var ahora = DateTime.Now;
+        var enMision = EstatusVehiculos.EnMision(ahora);
         var totalRecords = await query.CountAsync(cancellationToken);
 
         var data = await query
@@ -56,12 +60,13 @@ public class GetVehiculosQuery(IUnitOfWork uow)
                 Chasis = v.Chasis,
                 Matricula = v.Matricula,
                 Placa = v.Placa,
+                Ficha = v.Ficha,
                 Marca = v.Marca != null ? v.Marca.Nombre : string.Empty,
                 Modelo = v.Modelo != null ? v.Modelo.Nombre : string.Empty,
                 Fabricacion = v.Fabricacion,
                 Color = v.Color != null ? v.Color.Nombre : string.Empty,
                 Tipo = v.Tipo != null ? v.Tipo.Nombre : string.Empty,
-                Disponible = v.Disponible
+                Estatus = EstatusVehiculos.Resolver(v.Estado, v.Asignaciones!.AsQueryable().Any(enMision)).ToString()
             })
             .ToListAsync(cancellationToken);
 

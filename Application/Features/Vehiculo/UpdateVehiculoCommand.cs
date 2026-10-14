@@ -8,8 +8,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.Features.Vehiculo;
 
 /// <summary>
-/// Actualiza los datos del vehículo. Los vehículos no se eliminan: <paramref name="Disponible"/> en false
-/// lo deja fuera de servicio (no se puede asignar) y conserva su historial.
+/// Actualiza los datos del vehículo. Su estado (operativo, en mantenimiento o inactivo) no se edita
+/// aquí: lo cambia el taller. Los vehículos no se eliminan; la baja los deja inactivos con su historial.
 /// </summary>
 public record UpdateVehiculoCommand(
     Guid Id,
@@ -21,8 +21,8 @@ public record UpdateVehiculoCommand(
     Guid ModeloId,
     Guid TipoId,
     Guid ColorId,
-    bool Disponible
-) : IRequest<Result>, IDatosVehiculo;
+    string? Ficha = null
+): IRequest<Result>, IDatosVehiculo;
 
 public class UpdateVehiculoCommandValidator : DatosVehiculoValidator<UpdateVehiculoCommand>
 {
@@ -42,7 +42,7 @@ public class UpdateVehiculoCommandHandler(IUnitOfWork uow) : IRequestHandler<Upd
         if (validacion.IsFailure) return validacion;
 
         VehiculoReglas.Aplicar(vehiculo, request);
-        vehiculo.Disponible = request.Disponible;
+
 
         await uow.SaveChangesAsync(cancellationToken);
         return Result.Success();

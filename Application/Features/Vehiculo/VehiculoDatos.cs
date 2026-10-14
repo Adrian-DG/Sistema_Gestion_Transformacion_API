@@ -13,6 +13,7 @@ public interface IDatosVehiculo
     string Chasis { get; }
     string Matricula { get; }
     string Placa { get; }
+    string? Ficha { get; }
     int Fabricacion { get; }
     Guid MarcaId { get; }
     Guid ModeloId { get; }
@@ -36,6 +37,9 @@ public class DatosVehiculoValidator<T> : AbstractValidator<T> where T : IDatosVe
             .NotEmpty().WithMessage("La placa es obligatoria.")
             .MaximumLength(10).WithMessage("La placa debe tener un máximo de 10 caracteres.");
 
+        RuleFor(x => x.Ficha)
+            .MaximumLength(20).WithMessage("La ficha debe tener un máximo de 20 caracteres.");
+
         RuleFor(x => x.Fabricacion)
             .InclusiveBetween(1900, DateTime.Now.Year + 1)
             .WithMessage($"El año de fabricación debe estar entre 1900 y {DateTime.Now.Year + 1}.");
@@ -52,9 +56,13 @@ internal static class VehiculoReglas
     /// <summary>Normaliza los identificadores del vehículo: sin espacios a los lados y en mayúsculas.</summary>
     public static string Normalizar(string valor) => valor.Trim().ToUpperInvariant();
 
+    /// <summary>La ficha es opcional: vacía se guarda como nula.</summary>
+    public static string? NormalizarOpcional(string? valor) =>
+        string.IsNullOrWhiteSpace(valor) ? null : Normalizar(valor);
+
     /// <summary>
     /// Verifica que los catálogos existan y estén activos, que el modelo sea de la marca indicada y que
-    /// chasis, matrícula y placa no estén registrados en otro vehículo.
+    /// chasis, matrícula, placa y ficha no estén registrados en otro vehículo.
     /// </summary>
     public static async Task<Result> ValidarAsync(IUnitOfWork uow, IDatosVehiculo datos, Guid? excluirId, CancellationToken cancellationToken)
     {
@@ -86,10 +94,12 @@ internal static class VehiculoReglas
         var chasis = Normalizar(datos.Chasis);
         var matricula = Normalizar(datos.Matricula);
         var placa = Normalizar(datos.Placa);
+        var ficha = NormalizarOpcional(datos.Ficha);
 
         var duplicado = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
-            .Where(v => v.Id != excluirId && (v.Chasis == chasis || v.Matricula == matricula || v.Placa == placa))
-            .Select(v => new { v.Chasis, v.Matricula, v.Placa })
+            .Where(v => v.Id != excluirId &&
+                (v.Chasis == chasis || v.Matricula == matricula || v.Placa == placa || (ficha != null && v.Ficha == ficha)))
+            .Select(v => new { v.Chasis, v.Matricula, v.Placa, v.Ficha })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (duplicado is not null)
@@ -97,7 +107,8 @@ internal static class VehiculoReglas
             return Result.Failure(
                 duplicado.Placa == placa ? VehiculoErrors.Duplicado("Placa", "la placa", placa) :
                 duplicado.Chasis == chasis ? VehiculoErrors.Duplicado("Chasis", "el chasis", chasis) :
-                VehiculoErrors.Duplicado("Matricula", "la matrícula", matricula));
+                duplicado.Matricula == matricula ? VehiculoErrors.Duplicado("Matricula", "la matrícula", matricula) :
+                VehiculoErrors.Duplicado("Ficha", "la ficha", ficha!));
         }
 
         return Result.Success();
@@ -108,6 +119,7 @@ internal static class VehiculoReglas
         vehiculo.Chasis = Normalizar(datos.Chasis);
         vehiculo.Matricula = Normalizar(datos.Matricula);
         vehiculo.Placa = Normalizar(datos.Placa);
+        vehiculo.Ficha = NormalizarOpcional(datos.Ficha);
         vehiculo.Fabricacion = datos.Fabricacion;
         vehiculo.MarcaId = datos.MarcaId;
         vehiculo.ModeloId = datos.ModeloId;

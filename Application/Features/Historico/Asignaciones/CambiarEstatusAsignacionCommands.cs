@@ -44,6 +44,17 @@ public class CambiarEstatusAsignacionCommandHandler(IUnitOfWork uow, ICurrentUse
     public Task<Result> Handle(AprobarAsignacionCommand request, CancellationToken cancellationToken) =>
         Execute(request.AsignacionId, async asignacion =>
         {
+            // El vehículo pudo entrar al taller o darse de baja mientras la solicitud estaba pendiente.
+            var estado = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
+                .Where(v => v.Id == asignacion.VehiculoId)
+                .Select(v => v.Estado)
+                .FirstAsync(cancellationToken);
+
+            if (estado != Domain.Enums.EstadoVehiculo.Operativo)
+            {
+                return Result.Failure(VehiculoErrors.NoOperativo(asignacion.VehiculoId, estado));
+            }
+
             var ocupado = await uow.VehiculoOcupadoAsync(
                 asignacion.VehiculoId, asignacion.FechaSalida, asignacion.FechaRetornoEstimada,
                 asignacion.Id, DateTime.Now, cancellationToken);

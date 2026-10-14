@@ -10,6 +10,13 @@ public static class VehiculoErrors
         "Vehiculo.NotAvailable",
         $"El vehículo con id '{id}' no está disponible para asignación.");
 
+    /// <summary>El vehículo está en el taller o dado de baja; no se puede asignar.</summary>
+    public static Error NoOperativo(Guid id, Enums.EstadoVehiculo estado) => Error.Conflict(
+        "Vehiculo.NoOperativo",
+        estado == Enums.EstadoVehiculo.Inactivo
+            ? $"El vehículo con id '{id}' está inactivo (dado de baja) y no se puede asignar."
+            : $"El vehículo con id '{id}' está en mantenimiento y no se puede asignar hasta que salga del taller.");
+
     /// <param name="campo">Placa, Chasis o Matricula; forma parte del código para ubicar el error en el formulario.</param>
     public static Error Duplicado(string campo, string descripcion, string valor) => Error.Conflict(
         $"Vehiculo.{campo}Duplicado",

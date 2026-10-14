@@ -98,10 +98,10 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         var vehiculoResult = await unitOfWork.VehiculoRepository.GetById(request.VehiculoId, cancellationToken);
         if (vehiculoResult.IsFailure) return Result.Failure<Guid>(vehiculoResult.Error);
 
-        // Disponible indica si el vehículo está operativo (no fuera de servicio).
-        if (!vehiculoResult.Value.Disponible)
+        // En mantenimiento o inactivo no se asigna; las misiones se validan por fechas a continuación.
+        if (vehiculoResult.Value.Estado != EstadoVehiculo.Operativo)
         {
-            return Result.Failure<Guid>(VehiculoErrors.NotAvailable(request.VehiculoId));
+            return Result.Failure<Guid>(VehiculoErrors.NoOperativo(request.VehiculoId, vehiculoResult.Value.Estado));
         }
 
         var ocupado = await unitOfWork.VehiculoOcupadoAsync(

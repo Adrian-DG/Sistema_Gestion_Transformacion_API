@@ -14,6 +14,7 @@ public class VehiculoDetalleViewModel
     public required string Chasis { get; set; }
     public required string Matricula { get; set; }
     public required string Placa { get; set; }
+    public string? Ficha { get; set; }
     public int Fabricacion { get; set; }
     public Guid MarcaId { get; set; }
     public required string Marca { get; set; }
@@ -23,13 +24,14 @@ public class VehiculoDetalleViewModel
     public required string Tipo { get; set; }
     public Guid ColorId { get; set; }
     public required string Color { get; set; }
-    public bool Disponible { get; set; }
+    public string Estatus { get; set; } = string.Empty;
 }
 
 public class GetVehiculoQueryHandler(IUnitOfWork uow) : IRequestHandler<IDEntityFilterQuery<VehiculoDetalleViewModel>, Result<VehiculoDetalleViewModel>>
 {
     public async Task<Result<VehiculoDetalleViewModel>> Handle(IDEntityFilterQuery<VehiculoDetalleViewModel> request, CancellationToken cancellationToken)
     {
+        var enMision = EstatusVehiculos.EnMision(DateTime.Now);
         var vehiculo = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
             .Where(v => v.Id == request.Id)
             .Select(v => new VehiculoDetalleViewModel
@@ -38,6 +40,7 @@ public class GetVehiculoQueryHandler(IUnitOfWork uow) : IRequestHandler<IDEntity
                 Chasis = v.Chasis,
                 Matricula = v.Matricula,
                 Placa = v.Placa,
+                Ficha = v.Ficha,
                 Fabricacion = v.Fabricacion,
                 MarcaId = v.MarcaId,
                 Marca = v.Marca!.Nombre,
@@ -47,7 +50,7 @@ public class GetVehiculoQueryHandler(IUnitOfWork uow) : IRequestHandler<IDEntity
                 Tipo = v.Tipo!.Nombre,
                 ColorId = v.ColorId,
                 Color = v.Color!.Nombre,
-                Disponible = v.Disponible
+                Estatus = EstatusVehiculos.Resolver(v.Estado, v.Asignaciones!.AsQueryable().Any(enMision)).ToString()
             })
             .FirstOrDefaultAsync(cancellationToken);
 

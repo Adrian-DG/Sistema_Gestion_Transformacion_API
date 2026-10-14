@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Application.Features.Historico.Asignaciones;
 
 /// <summary>
-/// Vehículos en servicio sin asignaciones aprobadas que choquen con el período (misma regla que
+/// Vehículos operativos (ni en mantenimiento ni inactivos) sin asignaciones aprobadas que choquen con el período (misma regla que
 /// <see cref="DisponibilidadVehiculo.VehiculoOcupadoAsync"/>). Nombre: "Placa · Marca Modelo (año)".
 /// </summary>
 public record GetVehiculosDisponiblesQuery(DateTime Salida, DateTime RetornoEstimado)
@@ -38,7 +38,7 @@ public class GetVehiculosDisponiblesQueryHandler(IUnitOfWork uow)
             .Select(a => a.VehiculoId);
 
         var vehiculos = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
-            .Where(v => v.Disponible && !ocupados.Contains(v.Id))
+            .Where(v => v.Estado == EstadoVehiculo.Operativo && !ocupados.Contains(v.Id))
             .OrderBy(v => v.Placa)
             .Select(v => new CatalogItemViewModel
             {

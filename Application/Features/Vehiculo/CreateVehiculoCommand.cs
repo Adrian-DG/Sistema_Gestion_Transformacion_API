@@ -5,7 +5,7 @@ using MediatR;
 
 namespace Application.Features.Vehiculo;
 
-/// <summary>Registra un vehículo disponible. Chasis, matrícula y placa se guardan en mayúsculas.</summary>
+/// <summary>Registra un vehículo disponible. Chasis, matrícula, placa y ficha se guardan en mayúsculas.</summary>
 public record CreateVehiculoCommand(
     string Chasis,
     string Matricula,
@@ -14,8 +14,9 @@ public record CreateVehiculoCommand(
     Guid MarcaId,
     Guid ModeloId,
     Guid TipoId,
-    Guid ColorId
-) : IRequest<Result<Guid>>, IDatosVehiculo;
+    Guid ColorId,
+    string? Ficha = null
+): IRequest<Result<Guid>>, IDatosVehiculo;
 
 public class CreateVehiculoCommandValidator : DatosVehiculoValidator<CreateVehiculoCommand>;
 
@@ -28,7 +29,7 @@ public class CreateVehiculoCommandHandler(IUnitOfWork uow, IMapper mapper) : IRe
 
         var vehiculo = mapper.Map<Domain.Entities.Recursos.Vehiculo>(request);
         VehiculoReglas.Aplicar(vehiculo, request);
-        vehiculo.Disponible = true;
+        vehiculo.Estado = Domain.Enums.EstadoVehiculo.Operativo;
         vehiculo.Status = true;
 
         await uow.VehiculoRepository.Create(vehiculo, cancellationToken);

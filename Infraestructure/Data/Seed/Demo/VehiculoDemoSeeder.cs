@@ -1,9 +1,10 @@
 using Domain.Entities.Recursos;
+using Domain.Enums;
 using static Infraestructure.Data.Seed.CatalogoVehiculoSeeder;
 
 namespace Infraestructure.Data.Seed.Demo
 {
-    /// <summary>Flotilla de ejemplo; <see cref="FueraDeServicio"/> no está disponible para asignaciones.</summary>
+    /// <summary>Flotilla de ejemplo; <see cref="EnMantenimiento"/> está en el taller y no se puede asignar.</summary>
     internal sealed record VehiculosDemo(
         Vehiculo HiluxUno,
         Vehiculo HiluxDos,
@@ -12,9 +13,9 @@ namespace Infraestructure.Data.Seed.Demo
         Vehiculo Colorado,
         Vehiculo Wrangler,
         Vehiculo L200,
-        Vehiculo FueraDeServicio)
+        Vehiculo EnMantenimiento)
     {
-        public IReadOnlyList<Vehiculo> Todos => [HiluxUno, HiluxDos, Ranger, Frontier, Colorado, Wrangler, L200, FueraDeServicio];
+        public IReadOnlyList<Vehiculo> Todos => [HiluxUno, HiluxDos, Ranger, Frontier, Colorado, Wrangler, L200, EnMantenimiento];
     }
 
     internal static class VehiculoDemoSeeder
@@ -23,7 +24,7 @@ namespace Infraestructure.Data.Seed.Demo
         {
             var secuencia = 0;
 
-            Vehiculo Vehiculo(Guid marcaId, Guid modeloId, Guid tipoId, Guid colorId, int fabricacion, bool disponible = true)
+            Vehiculo Vehiculo(Guid marcaId, Guid modeloId, Guid tipoId, Guid colorId, int fabricacion, EstadoVehiculo estado = EstadoVehiculo.Operativo)
             {
                 secuencia++;
                 return demo.Registrar(new Vehiculo
@@ -31,12 +32,13 @@ namespace Infraestructure.Data.Seed.Demo
                     Chasis = $"DEMO{fabricacion}{secuencia:D9}",
                     Matricula = $"MAT-DEMO-{secuencia:D4}",
                     Placa = $"OD{secuencia:D5}",
+                    Ficha = $"F-{secuencia:D3}",
                     Fabricacion = fabricacion,
                     MarcaId = marcaId,
                     ModeloId = modeloId,
                     TipoId = tipoId,
                     ColorId = colorId,
-                    Disponible = disponible
+                    Estado = estado
                 });
             }
 
@@ -48,7 +50,7 @@ namespace Infraestructure.Data.Seed.Demo
                 Colorado: Vehiculo(MarcaSeeder.Chevrolet, ModeloSeeder.Colorado, TiposVehiculo.Camioneta, Colores.Negro, 2024),
                 Wrangler: Vehiculo(MarcaSeeder.Jeep, ModeloSeeder.Wrangler, TiposVehiculo.Jeepeta, Colores.Negro, 2023),
                 L200: Vehiculo(MarcaSeeder.Mitsubishi, ModeloSeeder.L200, TiposVehiculo.Camioneta, Colores.Blanco, 2019),
-                FueraDeServicio: Vehiculo(MarcaSeeder.Mazda, ModeloSeeder.BT50, TiposVehiculo.Camioneta, Colores.Azul, 2016, disponible: false));
+                EnMantenimiento: Vehiculo(MarcaSeeder.Mazda, ModeloSeeder.BT50, TiposVehiculo.Camioneta, Colores.Azul, 2016, estado: EstadoVehiculo.EnMantenimiento));
         }
     }
 }
