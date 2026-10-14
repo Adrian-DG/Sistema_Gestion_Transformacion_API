@@ -134,6 +134,11 @@ namespace Infraestructure.Data
                 {
                     e.Property<string>(color).HasMaxLength(7).IsUnicode(false);
                 }
+                e.HasIndex(a => a.Nombre).IsUnique();
+                // Una sola apariencia activa.
+                e.HasIndex(a => a.EsActiva).IsUnique().HasFilter("[EsActiva] = 1");
+                e.Property(a => a.Nombre).HasMaxLength(100);
+                e.Property(a => a.Descripcion).HasMaxLength(300);
                 e.Property(a => a.NombreSistema).HasMaxLength(150);
                 e.Property(a => a.NombreCorto).HasMaxLength(30);
                 e.Property(a => a.NombreInstitucion).HasMaxLength(200);
@@ -202,8 +207,9 @@ namespace Infraestructure.Data
             TipoOperacionSeeder.Seed(builder);
             RoleSeeder.Seed(builder);
             RangoSeeder.Seed(builder);
-            var marcas = MarcaSeeder.Seed(builder);
-            ModeloSeeder.Seed(builder, marcas);
+            MarcaSeeder.Seed(builder);
+            ModeloSeeder.Seed(builder);
+            CatalogoVehiculoSeeder.Seed(builder);
             AparienciaSeeder.Seed(builder);
             PlantillaReporteSeeder.Seed(builder);
             #endregion

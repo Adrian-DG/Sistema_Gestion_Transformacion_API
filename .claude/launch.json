@@ -6,6 +6,12 @@
       "runtimeExecutable": "dotnet",
       "runtimeArgs": ["run", "--project", "API", "--launch-profile", "http"],
       "port": 5223
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../Frontend", "start"],
+      "port": 4200
     }
   ]
 }

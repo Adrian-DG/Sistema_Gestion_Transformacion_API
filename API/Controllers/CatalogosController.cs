@@ -59,6 +59,14 @@ namespace API.Controllers
             return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
         }
 
+        /// <summary>Vehículos para listas de selección (Id y "Placa · Marca Modelo (año)").</summary>
+        [HttpGet("vehiculos")]
+        public async Task<IActionResult> GetVehiculos(CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetVehiculosCatalogoQuery(), cancellationToken);
+            return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
+        }
+
         [HttpGet("rangos")]
         public async Task<IActionResult> GetRangos(CancellationToken cancellationToken)
         {

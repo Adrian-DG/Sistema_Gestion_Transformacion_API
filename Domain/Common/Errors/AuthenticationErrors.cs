@@ -2,13 +2,10 @@ namespace Domain.Common.Errors;
 
 public static class AuthenticationErrors
 {
+    /// <summary>Usuario inexistente o contraseña incorrecta; no se distingue cuál de los dos.</summary>
     public static Error InvalidCredentials() => Error.Unauthorized(
         "Authentication.InvalidCredentials",
-        "No se pudieron validar las credenciales proporcionadas.");
-
-    public static Error UserNotFound(string username) => Error.NotFound(
-        "Authentication.UserNotFound",
-        $"El usuario o las credenciales proporcionadas no fueron encontrados.");
+        "Usuario o contraseña incorrectos.");
 
     public static Error LoginFailed() => Error.Unauthorized(
         "Authentication.LoginFailed",

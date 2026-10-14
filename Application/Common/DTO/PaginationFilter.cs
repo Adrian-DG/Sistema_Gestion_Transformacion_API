@@ -13,6 +13,12 @@ public record PaginationFilterQuery<T> : IRequest<Result<PagedData<T>>> where T 
     public int PageNumber { get; set; }
     public int PageSize { get; set; }
     public string Param { get; set; }
+
+    /// <summary>Para el model binding desde la query string ([FromQuery]), que requiere un constructor sin parámetros.</summary>
+    public PaginationFilterQuery() : this(1, 10, string.Empty)
+    {
+    }
+
     public PaginationFilterQuery(int pageNumber, int pageSize, string param)
     {
         PageNumber = pageNumber;

@@ -1,27 +1,31 @@
-﻿using Domain.Entities.Misc;
+using Domain.Entities.Misc;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Infraestructure.Data.Seed
 {
+    /// <summary>
+    /// Modelos iniciales, uno por marca de <see cref="MarcaSeeder"/>. Ids fijos y Status activo.
+    /// </summary>
     public static class ModeloSeeder
     {
-        public static void Seed(this ModelBuilder modelBuilder, List<Marca> marcas)
+        public static readonly Guid Colorado = new("3b7d0f52-6c4e-4081-9f23-7e0000000001");
+        public static readonly Guid Ranger = new("3b7d0f52-6c4e-4081-9f23-7e0000000002");
+        public static readonly Guid Frontier = new("3b7d0f52-6c4e-4081-9f23-7e0000000003");
+        public static readonly Guid Wrangler = new("3b7d0f52-6c4e-4081-9f23-7e0000000004");
+        public static readonly Guid BT50 = new("3b7d0f52-6c4e-4081-9f23-7e0000000005");
+        public static readonly Guid L200 = new("3b7d0f52-6c4e-4081-9f23-7e0000000006");
+        public static readonly Guid Hilux = new("3b7d0f52-6c4e-4081-9f23-7e0000000007");
+
+        public static void Seed(this ModelBuilder modelBuilder)
         {
-            var modelos = new List<Modelo>
-            {
-                new Modelo { Id = Guid.NewGuid(), Nombre = "Colorado", MarcaId = marcas.First(m => m.Nombre == "Chevrolet").Id },
-                new Modelo { Id = Guid.NewGuid(), Nombre = "Ranger", MarcaId = marcas.First(m => m.Nombre == "Ford").Id },
-                new Modelo { Id = Guid.NewGuid(), Nombre = "Frontier", MarcaId = marcas.First(m => m.Nombre == "Nissan").Id },
-                new Modelo { Id = Guid.NewGuid(), Nombre = "Wrangler", MarcaId = marcas.First(m => m.Nombre == "Jeep").Id },
-                new Modelo { Id = Guid.NewGuid(), Nombre = "BT-50", MarcaId = marcas.First(m => m.Nombre == "Mazda").Id },
-                new Modelo { Id = Guid.NewGuid(), Nombre = "L200", MarcaId = marcas.First(m => m.Nombre == "Mitsubishi").Id },
-                new Modelo { Id = Guid.NewGuid(), Nombre = "Hilux", MarcaId = marcas.First(m => m.Nombre == "Toyota").Id },
-            };
-                
-            modelBuilder.Entity<Modelo>().HasData(modelos);            
+            modelBuilder.Entity<Modelo>().HasData(
+                new Modelo { Id = Colorado, Nombre = "Colorado", MarcaId = MarcaSeeder.Chevrolet, Status = true },
+                new Modelo { Id = Ranger, Nombre = "Ranger", MarcaId = MarcaSeeder.Ford, Status = true },
+                new Modelo { Id = Frontier, Nombre = "Frontier", MarcaId = MarcaSeeder.Nissan, Status = true },
+                new Modelo { Id = Wrangler, Nombre = "Wrangler", MarcaId = MarcaSeeder.Jeep, Status = true },
+                new Modelo { Id = BT50, Nombre = "BT-50", MarcaId = MarcaSeeder.Mazda, Status = true },
+                new Modelo { Id = L200, Nombre = "L200", MarcaId = MarcaSeeder.Mitsubishi, Status = true },
+                new Modelo { Id = Hilux, Nombre = "Hilux", MarcaId = MarcaSeeder.Toyota, Status = true });
         }
     }
 }

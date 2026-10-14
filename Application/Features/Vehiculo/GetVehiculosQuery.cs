@@ -1,12 +1,9 @@
-﻿using Application.Common.DTO;
+using Application.Common.DTO;
 using Application.Common.Response;
-using Application.Contracts; // Put IApplicationDbContext here
+using Application.Contracts;
 using Domain.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Application.Features.Vehiculo;
 
@@ -20,8 +17,13 @@ public class VehiculoViewModel
     public required string Modelo { get; set; }
     public required int Fabricacion { get; set; }
     public required string Color { get; set; }
+    public required string Tipo { get; set; }
+
+    /// <summary>False cuando el vehículo está fuera de servicio.</summary>
+    public bool Disponible { get; set; }
 }
 
+/// <summary>Busca por placa, matrícula, chasis, marca o modelo.</summary>
 public class GetVehiculosQuery(IUnitOfWork uow)
     : IRequestHandler<PaginationFilterQuery<VehiculoViewModel>, Result<PagedData<VehiculoViewModel>>>
 {
@@ -33,7 +35,13 @@ public class GetVehiculosQuery(IUnitOfWork uow)
 
         if (!string.IsNullOrWhiteSpace(request.Param))
         {
-            query = query.Where(v => v.Placa.Contains(request.Param) || v.Matricula.Contains(request.Param));
+            var texto = request.Param.Trim();
+            query = query.Where(v =>
+                v.Placa.Contains(texto) ||
+                v.Matricula.Contains(texto) ||
+                v.Chasis.Contains(texto) ||
+                v.Marca!.Nombre.Contains(texto) ||
+                v.Modelo!.Nombre.Contains(texto));
         }
 
         var totalRecords = await query.CountAsync(cancellationToken);
@@ -51,7 +59,9 @@ public class GetVehiculosQuery(IUnitOfWork uow)
                 Marca = v.Marca != null ? v.Marca.Nombre : string.Empty,
                 Modelo = v.Modelo != null ? v.Modelo.Nombre : string.Empty,
                 Fabricacion = v.Fabricacion,
-                Color = v.Color != null ? v.Color.Nombre : string.Empty
+                Color = v.Color != null ? v.Color.Nombre : string.Empty,
+                Tipo = v.Tipo != null ? v.Tipo.Nombre : string.Empty,
+                Disponible = v.Disponible
             })
             .ToListAsync(cancellationToken);
 

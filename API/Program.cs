@@ -1,39 +1,20 @@
 using API.Middleware;
 using Application;
 using Infraestructure;
+using Infraestructure.Data.Seed.Demo;
 using Infraestructure.Identity.Seed;
-using Microsoft.OpenApi;
+using API.OpenApi;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+// Documento OpenAPI que muestra Scalar: esquema Bearer y, por endpoint, los permisos que exige.
 builder.Services.AddOpenApi(options =>
 {
-    options.AddDocumentTransformer((document, context, cancellationToken) =>
-    {
-        var components = document.Components ??= new OpenApiComponents();
-        components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-
-        components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
-        {
-            Type = SecuritySchemeType.Http,
-            Scheme = "bearer",
-            BearerFormat = "JWT",
-            Description = "Introduce tu token JWT sin la palabra 'Bearer'"
-        };
-
-        var securitySchemeRef = new OpenApiSecuritySchemeReference("Bearer", document);
-
-        document.Security ??= new List<OpenApiSecurityRequirement>();
-        document.Security.Add(new OpenApiSecurityRequirement
-        {
-            [securitySchemeRef] = new List<string>()
-        });
-
-        return Task.CompletedTask;
-    });
+    options.AddDocumentTransformer<AuthenticationDocumentTransformer>();
+    options.AddOperationTransformer<AuthorizationOperationTransformer>();
 });
 
 
@@ -63,11 +44,16 @@ if (app.Environment.IsDevelopment())
 
     app.MapScalarApiReference(opt =>
     {
-        opt.WithTitle("Dirección Transportación API");
-        opt.AddPreferredSecuritySchemes("Bearer");
+        opt.WithTitle("Dirección de Transportación (J-4) · API");
         opt.WithTheme(ScalarTheme.Laserwave);
         opt.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        opt.AddPreferredSecuritySchemes(AuthenticationDocumentTransformer.BearerScheme);
+        // Conserva el token al recargar la documentación (solo se publica en Development).
+        opt.EnablePersistentAuthentication();
     });
+
+    // Al abrir la API en el navegador se muestra la documentación.
+    app.MapGet("/", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
 }
 
 app.UseExceptionHandler();
@@ -80,5 +66,11 @@ app.UseAuthorization();
 app.MapControllers();
 
 await app.Services.SeedAdministradorAsync();
+
+// Datos de ejemplo (DatosDemo:Habilitado); nunca en producción.
+if (app.Environment.IsDevelopment())
+{
+    await app.Services.SeedDatosDemoAsync();
+}
 
 app.Run();

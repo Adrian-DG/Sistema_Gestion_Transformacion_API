@@ -1,14 +1,18 @@
-﻿using Domain.Abstraction;
+using Domain.Abstraction;
 using Domain.Entities.Misc;
 using Domain.Entities.Recursos;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Domain.Entities.Historico
 {
+    /// <summary>
+    /// Póliza de seguro de un vehículo. No se eliminan: al renovar se registra una póliza nueva y la
+    /// anterior queda en el historial del vehículo.
+    /// </summary>
     public class Poliza : BaseEntityMetadata, IAuditableEntityMetadata
     {
+        /// <summary>Días antes del vencimiento en que la póliza se considera "por vencer".</summary>
+        public const int DiasAvisoVencimiento = 30;
+
         public required string Numero { get; set; }
         public DateOnly FechaExpedicion { get; set; }
         public DateOnly FechaEfectividad { get; set; }
@@ -25,37 +29,25 @@ namespace Domain.Entities.Historico
         public DateTime UpdatedAt { get; set; }
         public Guid UpdatedBy { get; set; }
 
-        public string DiasRestanteCobertura()
-        {
-            var actualDate = DateTime.UtcNow;
-            int remainingDays = (FechaVencimiento.ToDateTime(TimeOnly.MinValue) - actualDate).Days;
-            return remainingDays > 0 ? $"{remainingDays} días restantes" : "Cobertura vencida";
-        }
+        /// <summary>Días desde <paramref name="hoy"/> hasta el vencimiento (negativo si ya venció).</summary>
+        public static int DiasRestantes(DateOnly vencimiento, DateOnly hoy) => vencimiento.DayNumber - hoy.DayNumber;
 
-        public string EstatusCobertura()
+        /// <summary>
+        /// Vigente, PorVencer (vence dentro de <see cref="DiasAvisoVencimiento"/> días) o Vencida. El día del
+        /// vencimiento la póliza ya se considera vencida.
+        /// </summary>
+        public static EstadoCobertura Cobertura(DateOnly vencimiento, DateOnly hoy) => DiasRestantes(vencimiento, hoy) switch
         {
-            var actualDate = DateTime.UtcNow;
-            return FechaVencimiento.ToDateTime(TimeOnly.MinValue) > actualDate ? "Vigente" : "Vencida";
-        }
+            <= 0 => EstadoCobertura.Vencida,
+            <= DiasAvisoVencimiento => EstadoCobertura.PorVencer,
+            _ => EstadoCobertura.Vigente
+        };
+    }
 
-        public bool IsCoberturaVigente()
-        {
-            var actualDate = DateTime.UtcNow;
-            return FechaVencimiento.ToDateTime(TimeOnly.MinValue) > actualDate;
-        }
-
-        public bool IsCoberturaPorVencer()
-        {
-            var actualDate = DateTime.UtcNow;
-            int remainingDays = (FechaVencimiento.ToDateTime(TimeOnly.MinValue) - actualDate).Days;
-            return remainingDays > 0 && remainingDays <= 30;
-        }
-
-        public bool IsCoberturaVencida()
-        {
-            var actualDate = DateTime.UtcNow;
-            return FechaVencimiento.ToDateTime(TimeOnly.MinValue) <= actualDate;
-        }
-
+    public enum EstadoCobertura
+    {
+        Vigente = 1,
+        PorVencer = 2,
+        Vencida = 3
     }
 }

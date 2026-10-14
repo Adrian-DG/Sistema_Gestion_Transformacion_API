@@ -5,12 +5,15 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>114d57cc-1529-44c5-ac60-c542973c4305</UserSecretsId>
+    <!-- Los comentarios /// de los controladores se muestran en la documentación (Scalar). -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.9" />
-    <PackageReference Include="Scalar.AspNetCore" Version="2.16.11" />
-    <PackageReference Include="Scalar.AspNetCore.Microsoft" Version="2.16.11" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.18.0" />
+    <PackageReference Include="Scalar.AspNetCore.Microsoft" Version="2.18.0" />
   </ItemGroup>
 
   <ItemGroup>

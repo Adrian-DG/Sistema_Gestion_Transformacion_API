@@ -1,6 +1,7 @@
 using Application.Security;
 using Domain.Enums;
 using Infraestructure.Data;
+using Infraestructure.Data.Seed;
 using Infraestructure.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -30,8 +31,7 @@ namespace Infraestructure.Identity.Seed
             var userManager = provider.GetRequiredService<UserManager<AppUser>>();
 
             // Las tablas de Identity y el rol Administrador los crean las migraciones.
-            if (!await context.Database.CanConnectAsync(cancellationToken)
-                || (await context.Database.GetPendingMigrationsAsync(cancellationToken)).Any())
+            if (!await context.Database.EstaListaParaSeedAsync(cancellationToken))
             {
                 logger.LogWarning("La base de datos no existe o tiene migraciones pendientes; no se creó el administrador inicial.");
                 return;

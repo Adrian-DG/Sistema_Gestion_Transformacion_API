@@ -13,8 +13,13 @@ namespace Infraestructure.Repositories.Authentication
         {
             var user = await userManager.FindByNameAsync(username);
 
+            // Usuario inexistente y contraseña incorrecta responden igual (401), para no revelar qué usuarios
+            // existen. Se calcula un hash para que ambos casos tarden lo mismo.
             if (user is null)
-                return Result.Failure<string>(AuthenticationErrors.UserNotFound(username));
+            {
+                userManager.PasswordHasher.HashPassword(null!, password);
+                return Result.Failure<string>(AuthenticationErrors.InvalidCredentials());
+            }
 
             var loginResult = await signInManager.CheckPasswordSignInAsync(user, password, false);
             if (!loginResult.Succeeded)
