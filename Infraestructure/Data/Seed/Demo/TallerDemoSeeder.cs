@@ -17,6 +17,19 @@ namespace Infraestructure.Data.Seed.Demo
 
             var repuestos = demo.Registrar(new Proveedor { Nombre = "Repuestos del Caribe, SRL", Rnc = "999000001", Telefono = "809-555-0101", Contacto = "Luis Peña" });
             var lubricantes = demo.Registrar(new Proveedor { Nombre = "Lubricantes Nacionales, SA", Rnc = "999000002", Telefono = "809-555-0102" });
+            var concesionario = demo.Registrar(new Proveedor
+            {
+                Nombre = "Concesionario Autorizado Demo, SRL",
+                Rnc = "999000003",
+                Telefono = "809-555-0103",
+                Contacto = "Taller de servicio",
+                EsTallerAutorizado = true
+            });
+
+            // El vehículo más nuevo está en garantía: sus mantenimientos se hacen en el concesionario.
+            v.Colorado.GarantiaVence = DateOnly.FromDateTime(ahora.AddYears(1));
+            v.Colorado.GarantiaKilometraje = 100000;
+            v.Colorado.GarantiaTallerId = concesionario.Id;
 
             Pieza Pieza(string codigo, string nombre, string unidad, decimal minima, string? codigoBarras = null) =>
                 demo.Registrar(new Pieza { Codigo = codigo, CodigoBarras = codigoBarras, Nombre = nombre, UnidadMedida = unidad, ExistenciaMinima = minima });
@@ -111,9 +124,32 @@ namespace Infraestructure.Data.Seed.Demo
                 FechaIngreso = ahora.AddDays(-1)
             });
             Consumo(enTaller, bandas, 1, 2800, ahora.AddDays(-1));
+            v.EnMantenimiento.Kilometraje = enTaller.Kilometraje;
 
-            demo.Context.Add(new Secuencia { Codigo = SolicitudTaller.CodigoSecuencia, Anio = anio, Ultimo = 2 });
-            return 2;
+            // Mantenimiento en garantía hecho en el concesionario (externo)
+            var ingresoExterno = ahora.AddDays(-30);
+            demo.Registrar(new SolicitudTaller
+            {
+                Numero = SolicitudTaller.FormatearNumero(anio, 3),
+                Tipo = TipoSolicitudTaller.Mantenimiento,
+                Lugar = LugarMantenimiento.Externo,
+                TallerExternoId = concesionario.Id,
+                Estatus = EstatusSolicitudTaller.Finalizada,
+                FechaSolicitud = ingresoExterno.AddDays(-2),
+                VehiculoId = v.Colorado.Id,
+                SolicitantePersonaId = p.EncargadoFlotilla.Id,
+                Motivo = "Servicio de garantía de los 30,000 km.",
+                Kilometraje = 30050,
+                FechaIngreso = ingresoExterno,
+                FechaSalida = ingresoExterno.AddDays(1),
+                Diagnostico = "Servicio programado del fabricante.",
+                TrabajoRealizado = "Cambio de aceite y filtros, revisión de frenos y suspensión.",
+                CostoServicio = 9850,
+                NumeroFacturaServicio = "B0100019001"
+            });
+
+            demo.Context.Add(new Secuencia { Codigo = SolicitudTaller.CodigoSecuencia, Anio = anio, Ultimo = 3 });
+            return 3;
         }
     }
 }

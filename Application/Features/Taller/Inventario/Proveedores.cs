@@ -20,6 +20,7 @@ public class ProveedorViewModel
     public string? Correo { get; set; }
     public string? Direccion { get; set; }
     public string? Contacto { get; set; }
+    public bool EsTallerAutorizado { get; set; }
     public bool Activo { get; set; }
 }
 
@@ -66,6 +67,7 @@ public class GetProveedoresQueryHandler(IUnitOfWork uow)
                 Correo = p.Correo,
                 Direccion = p.Direccion,
                 Contacto = p.Contacto,
+                EsTallerAutorizado = p.EsTallerAutorizado,
                 Activo = p.Status
             })
             .ToListAsync(cancellationToken);
@@ -74,8 +76,8 @@ public class GetProveedoresQueryHandler(IUnitOfWork uow)
     }
 }
 
-/// <summary>Proveedores activos para listas de selección.</summary>
-public record GetProveedoresCatalogoQuery : IRequest<Result<IReadOnlyList<CatalogItemViewModel>>>;
+/// <summary>Proveedores activos para listas de selección; <paramref name="SoloTalleres"/> deja los talleres autorizados.</summary>
+public record GetProveedoresCatalogoQuery(bool SoloTalleres = false) : IRequest<Result<IReadOnlyList<CatalogItemViewModel>>>;
 
 public class GetProveedoresCatalogoQueryHandler(IUnitOfWork uow)
     : IRequestHandler<GetProveedoresCatalogoQuery, Result<IReadOnlyList<CatalogItemViewModel>>>
@@ -84,6 +86,7 @@ public class GetProveedoresCatalogoQueryHandler(IUnitOfWork uow)
     {
         var proveedores = await uow.Query<Proveedor>()
             .Where(p => p.Status)
+            .Where(p => !request.SoloTalleres || p.EsTallerAutorizado)
             .OrderBy(p => p.Nombre)
             .Select(p => new CatalogItemViewModel { Id = p.Id, Nombre = p.Nombre })
             .ToListAsync(cancellationToken);
@@ -100,15 +103,18 @@ public interface IDatosProveedor
     string? Correo { get; }
     string? Direccion { get; }
     string? Contacto { get; }
+    bool EsTallerAutorizado { get; }
 }
 
 public record CreateProveedorCommand(
-    string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto
+    string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto,
+    bool EsTallerAutorizado = false
 ) : IRequest<Result<Guid>>, IDatosProveedor;
 
 /// <summary>Actualiza el proveedor; <paramref name="Activo"/> en false lo desactiva (no se elimina).</summary>
 public record UpdateProveedorCommand(
-    Guid Id, string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo
+    Guid Id, string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo,
+    bool EsTallerAutorizado = false
 ) : IRequest<Result>, IDatosProveedor;
 
 public class DatosProveedorValidator<T> : AbstractValidator<T> where T : IDatosProveedor
@@ -147,6 +153,7 @@ internal static class ProveedorReglas
         proveedor.Correo = Opcional(datos.Correo);
         proveedor.Direccion = Opcional(datos.Direccion);
         proveedor.Contacto = Opcional(datos.Contacto);
+        proveedor.EsTallerAutorizado = datos.EsTallerAutorizado;
     }
 }
 
@@ -200,6 +207,7 @@ public class GetProveedorQueryHandler(IUnitOfWork uow) : IRequestHandler<GetProv
                 Correo = p.Correo,
                 Direccion = p.Direccion,
                 Contacto = p.Contacto,
+                EsTallerAutorizado = p.EsTallerAutorizado,
                 Activo = p.Status
             })
             .FirstOrDefaultAsync(cancellationToken);

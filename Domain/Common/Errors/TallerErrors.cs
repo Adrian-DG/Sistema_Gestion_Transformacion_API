@@ -22,6 +22,22 @@ public static class TallerErrors
         "Taller.VehiculoEnMision",
         $"El vehículo {placa} está en una misión; registre su retorno antes de ingresarlo al taller.");
 
+    public static Error KilometrajeMenor(string placa, int actual) => Error.Validation(
+        "Taller.KilometrajeMenor",
+        $"El kilometraje no puede ser menor que el último registrado del vehículo {placa} ({actual:N0} km).");
+
+    public static Error TallerExternoInvalido(Guid id) => Error.NotFound(
+        "Taller.TallerExternoInvalido",
+        $"El proveedor con id '{id}' no existe, está desactivado o no es un taller autorizado.");
+
+    public static Error MecanicoRequerido() => Error.Validation(
+        "Taller.MecanicoRequerido",
+        "Asigne un mecánico: la solicitud se atiende en el taller interno.");
+
+    public static Error SoloInterno(string numero) => Error.Conflict(
+        "Taller.SoloInterno",
+        $"La solicitud {numero} se atiende en un taller externo: no consume piezas del inventario ni dictamina bajas.");
+
     public static Error VehiculoNoInactivo(string placa) => Error.Conflict(
         "Taller.VehiculoNoInactivo",
         $"El vehículo {placa} no está inactivo; solo se reactivan vehículos dados de baja.");

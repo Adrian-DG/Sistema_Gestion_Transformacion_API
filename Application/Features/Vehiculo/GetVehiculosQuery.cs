@@ -22,6 +22,8 @@ public class VehiculoViewModel
 
     /// <summary>Disponible, NoDisponible (en misión), EnMantenimiento o Inactivo; ver EstatusVehiculos.</summary>
     public string Estatus { get; set; } = string.Empty;
+    public int Kilometraje { get; set; }
+    public bool EnGarantia { get; set; }
 }
 
 /// <summary>Busca por placa, ficha, matrícula, chasis, marca o modelo.</summary>
@@ -48,6 +50,7 @@ public class GetVehiculosQuery(IUnitOfWork uow)
 
         var ahora = DateTime.Now;
         var enMision = EstatusVehiculos.EnMision(ahora);
+        var hoy = DateOnly.FromDateTime(ahora);
         var totalRecords = await query.CountAsync(cancellationToken);
 
         var data = await query
@@ -66,7 +69,9 @@ public class GetVehiculosQuery(IUnitOfWork uow)
                 Fabricacion = v.Fabricacion,
                 Color = v.Color != null ? v.Color.Nombre : string.Empty,
                 Tipo = v.Tipo != null ? v.Tipo.Nombre : string.Empty,
-                Estatus = EstatusVehiculos.Resolver(v.Estado, v.Asignaciones!.AsQueryable().Any(enMision)).ToString()
+                Estatus = EstatusVehiculos.Resolver(v.Estado, v.Asignaciones!.AsQueryable().Any(enMision)).ToString(),
+                Kilometraje = v.Kilometraje,
+                EnGarantia = v.GarantiaVence >= hoy && (v.GarantiaKilometraje == null || v.Kilometraje <= v.GarantiaKilometraje)
             })
             .ToListAsync(cancellationToken);
 

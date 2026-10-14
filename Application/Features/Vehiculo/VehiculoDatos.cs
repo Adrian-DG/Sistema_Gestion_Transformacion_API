@@ -14,6 +14,11 @@ public interface IDatosVehiculo
     string Matricula { get; }
     string Placa { get; }
     string? Ficha { get; }
+    int Kilometraje { get; }
+    DateOnly? GarantiaVence { get; }
+    int? GarantiaKilometraje { get; }
+    /// <summary>Taller autorizado (proveedor marcado como tal) donde se hacen los mantenimientos en garantía.</summary>
+    Guid? GarantiaTallerId { get; }
     int Fabricacion { get; }
     Guid MarcaId { get; }
     Guid ModeloId { get; }
@@ -36,6 +41,12 @@ public class DatosVehiculoValidator<T> : AbstractValidator<T> where T : IDatosVe
         RuleFor(x => x.Placa)
             .NotEmpty().WithMessage("La placa es obligatoria.")
             .MaximumLength(10).WithMessage("La placa debe tener un máximo de 10 caracteres.");
+
+        RuleFor(x => x.Kilometraje).GreaterThanOrEqualTo(0).WithMessage("El kilometraje no puede ser negativo.");
+        RuleFor(x => x.GarantiaKilometraje).GreaterThan(0).WithMessage("El kilometraje límite de la garantía debe ser mayor que 0.");
+        RuleFor(x => x.GarantiaVence).NotNull()
+            .When(x => x.GarantiaKilometraje is not null || x.GarantiaTallerId is not null)
+            .WithMessage("Indique hasta cuándo es válida la garantía.");
 
         RuleFor(x => x.Ficha)
             .MaximumLength(20).WithMessage("La ficha debe tener un máximo de 20 caracteres.");
@@ -91,6 +102,12 @@ internal static class VehiculoReglas
             return Result.Failure(VehiculoErrors.CatalogoInvalido("El color indicado no existe."));
         }
 
+        if (datos.GarantiaTallerId is { } tallerId &&
+            !await uow.Query<Domain.Entities.Taller.Proveedor>().AnyAsync(p => p.Id == tallerId && p.Status && p.EsTallerAutorizado, cancellationToken))
+        {
+            return Result.Failure(VehiculoErrors.CatalogoInvalido("El taller de la garantía no existe o no está marcado como taller autorizado."));
+        }
+
         var chasis = Normalizar(datos.Chasis);
         var matricula = Normalizar(datos.Matricula);
         var placa = Normalizar(datos.Placa);
@@ -120,6 +137,10 @@ internal static class VehiculoReglas
         vehiculo.Matricula = Normalizar(datos.Matricula);
         vehiculo.Placa = Normalizar(datos.Placa);
         vehiculo.Ficha = NormalizarOpcional(datos.Ficha);
+        vehiculo.Kilometraje = datos.Kilometraje;
+        vehiculo.GarantiaVence = datos.GarantiaVence;
+        vehiculo.GarantiaKilometraje = datos.GarantiaVence is null ? null : datos.GarantiaKilometraje;
+        vehiculo.GarantiaTallerId = datos.GarantiaVence is null ? null : datos.GarantiaTallerId;
         vehiculo.Fabricacion = datos.Fabricacion;
         vehiculo.MarcaId = datos.MarcaId;
         vehiculo.ModeloId = datos.ModeloId;

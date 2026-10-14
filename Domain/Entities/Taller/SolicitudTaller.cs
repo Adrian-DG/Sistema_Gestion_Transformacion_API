@@ -22,6 +22,7 @@ namespace Domain.Entities.Taller
 
         public required string Numero { get; set; }
         public TipoSolicitudTaller Tipo { get; set; }
+        public LugarMantenimiento Lugar { get; set; } = LugarMantenimiento.Interno;
         public EstatusSolicitudTaller Estatus { get; set; }
 
         public Guid VehiculoId { get; set; }
@@ -34,10 +35,14 @@ namespace Domain.Entities.Taller
 
         [DataType(DataType.MultilineText)]
         public required string Motivo { get; set; }
-        /// <summary>Kilometraje al registrar la solicitud o, si se indica, al ingresar.</summary>
-        public int? Kilometraje { get; set; }
+        /// <summary>Kilometraje del vehículo al registrar la solicitud; se actualiza al ingresar.</summary>
+        public int Kilometraje { get; set; }
 
-        // Ingreso
+        /// <summary>Taller autorizado que atiende la solicitud externa.</summary>
+        public Guid? TallerExternoId { get; set; }
+        public virtual Proveedor? TallerExterno { get; set; }
+
+        // Ingreso (el mecánico solo en el taller interno)
         public Guid? MecanicoId { get; set; }
         public virtual Mecanico? Mecanico { get; set; }
         public DateTime? FechaIngreso { get; set; }
@@ -54,6 +59,10 @@ namespace Domain.Entities.Taller
         [DataType(DataType.MultilineText)]
         public string? MotivoRechazoCancelacion { get; set; }
 
+        // Servicio externo: lo que cobró el taller autorizado. La factura es un Adjunto de la solicitud.
+        public decimal? CostoServicio { get; set; }
+        public string? NumeroFacturaServicio { get; set; }
+
         public virtual ICollection<MovimientoPieza> Movimientos { get; set; } = [];
 
         public DateTime CreatedAt { get; set; }
@@ -63,7 +72,9 @@ namespace Domain.Entities.Taller
 
         public bool Activa => Estatus is EstatusSolicitudTaller.Pendiente or EstatusSolicitudTaller.EnTaller;
 
-        public Result Ingresar(Guid mecanicoId, DateTime fecha, int? kilometraje)
+        public bool EsExterna => Lugar == LugarMantenimiento.Externo;
+
+        public Result Ingresar(Guid? mecanicoId, DateTime fecha, int kilometraje)
         {
             if (Estatus != EstatusSolicitudTaller.Pendiente)
             {
@@ -73,7 +84,18 @@ namespace Domain.Entities.Taller
             Estatus = EstatusSolicitudTaller.EnTaller;
             MecanicoId = mecanicoId;
             FechaIngreso = fecha;
-            if (kilometraje is not null) Kilometraje = kilometraje;
+            Kilometraje = kilometraje;
+            return Result.Success();
+        }
+
+        /// <summary>Cierre de una solicitud externa con lo que cobró el taller autorizado.</summary>
+        public Result FinalizarExterna(string diagnostico, string trabajoRealizado, decimal costoServicio, string? numeroFactura, DateTime fecha)
+        {
+            var cierre = Finalizar(diagnostico, trabajoRealizado, false, fecha);
+            if (cierre.IsFailure) return cierre;
+
+            CostoServicio = costoServicio;
+            NumeroFacturaServicio = numeroFactura;
             return Result.Success();
         }
 

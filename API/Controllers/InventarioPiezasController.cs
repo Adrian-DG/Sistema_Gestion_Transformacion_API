@@ -81,12 +81,15 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
-        /// <summary>Proveedores activos, para listas de selección.</summary>
+        /// <summary>
+        /// Proveedores activos, para listas de selección. <c>soloTalleres=true</c> deja los talleres autorizados
+        /// (también lo consulta Vehículos para la garantía).
+        /// </summary>
         [HttpGet("proveedores/catalogo")]
-        [AppAuthorize(AppPermission.GestionInventarioPiezas, AppPermission.GestionTaller, AppPermission.Administrador)]
-        public async Task<IActionResult> GetProveedoresCatalogo(CancellationToken cancellationToken)
+        [AppAuthorize(AppPermission.GestionInventarioPiezas, AppPermission.GestionTaller, AppPermission.GestionVehiculos, AppPermission.Administrador)]
+        public async Task<IActionResult> GetProveedoresCatalogo([FromQuery] bool soloTalleres, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetProveedoresCatalogoQuery(), cancellationToken);
+            var result = await _mediator.Send(new GetProveedoresCatalogoQuery(soloTalleres), cancellationToken);
             return HandleResult(result);
         }
 
@@ -112,7 +115,7 @@ namespace API.Controllers
         public async Task<IActionResult> UpdateProveedor([FromRoute] Guid id, [FromBody] DatosProveedorRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdateProveedorCommand(id, request.Nombre, request.Rnc, request.Telefono, request.Correo,
-                request.Direccion, request.Contacto, request.Activo);
+                request.Direccion, request.Contacto, request.Activo, request.EsTallerAutorizado);
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
         }
@@ -138,5 +141,6 @@ namespace API.Controllers
 
     public record DatosPiezaRequest(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null);
 
-    public record DatosProveedorRequest(string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo);
+    public record DatosProveedorRequest(string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo,
+        bool EsTallerAutorizado = false);
 }

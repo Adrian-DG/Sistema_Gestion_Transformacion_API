@@ -5,7 +5,10 @@ using MediatR;
 
 namespace Application.Features.Vehiculo;
 
-/// <summary>Registra un vehículo disponible. Chasis, matrícula, placa y ficha se guardan en mayúsculas.</summary>
+/// <summary>
+/// Registra un vehículo disponible con su kilometraje y, si es nuevo, su garantía. Chasis, matrícula,
+/// placa y ficha se guardan en mayúsculas.
+/// </summary>
 public record CreateVehiculoCommand(
     string Chasis,
     string Matricula,
@@ -15,7 +18,11 @@ public record CreateVehiculoCommand(
     Guid ModeloId,
     Guid TipoId,
     Guid ColorId,
-    string? Ficha = null
+    string? Ficha = null,
+    int Kilometraje = 0,
+    DateOnly? GarantiaVence = null,
+    int? GarantiaKilometraje = null,
+    Guid? GarantiaTallerId = null
 ): IRequest<Result<Guid>>, IDatosVehiculo;
 
 public class CreateVehiculoCommandValidator : DatosVehiculoValidator<CreateVehiculoCommand>;

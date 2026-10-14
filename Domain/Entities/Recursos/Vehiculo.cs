@@ -1,6 +1,7 @@
 ﻿using Domain.Abstraction;
 using Domain.Entities.Historico;
 using Domain.Entities.Misc;
+using Domain.Entities.Taller;
 using Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,20 @@ namespace Domain.Entities.Recursos
 
         /// <summary>Solo lo cambia el taller; el estatus visible se resuelve con EstatusVehiculos.</summary>
         public EstadoVehiculo Estado { get; set; } = EstadoVehiculo.Operativo;
+
+        /// <summary>Último kilometraje conocido: el de su registro o el del último ingreso al taller.</summary>
+        public int Kilometraje { get; set; }
+
+        // Garantía del fabricante: vence por fecha o por kilometraje, lo que ocurra primero. Para
+        // conservarla, los mantenimientos se hacen en el taller autorizado (el concesionario).
+        public DateOnly? GarantiaVence { get; set; }
+        public int? GarantiaKilometraje { get; set; }
+        public Guid? GarantiaTallerId { get; set; }
+        public virtual Proveedor? GarantiaTaller { get; set; }
+
+        /// <summary>Garantía vigente a la fecha indicada con el kilometraje actual.</summary>
+        public bool EnGarantia(DateOnly hoy) =>
+            GarantiaVence is { } vence && vence >= hoy && (GarantiaKilometraje is not { } limite || Kilometraje <= limite);
 
         public virtual ICollection<Asignacion>? Asignaciones { get; set; }
 

@@ -178,7 +178,10 @@ namespace Infraestructure.Data
 
             builder.Entity<SolicitudTaller>(e =>
             {
-                e.ToTable("Solicitudes", "taller");
+                // Externa ⇔ con taller autorizado.
+                e.ToTable("Solicitudes", "taller", t => t.HasCheckConstraint("CK_Solicitudes_TallerExterno",
+                    $"([Lugar] = {(int)Domain.Enums.LugarMantenimiento.Externo} AND [TallerExternoId] IS NOT NULL) OR " +
+                    $"([Lugar] = {(int)Domain.Enums.LugarMantenimiento.Interno} AND [TallerExternoId] IS NULL)"));
                 e.HasIndex(s => s.Numero).IsUnique();
                 e.HasIndex(s => new { s.VehiculoId, s.Estatus });
                 e.HasIndex(s => s.FechaSolicitud);
@@ -187,6 +190,9 @@ namespace Infraestructure.Data
                 e.Property(s => s.Diagnostico).HasMaxLength(2000);
                 e.Property(s => s.TrabajoRealizado).HasMaxLength(2000);
                 e.Property(s => s.MotivoRechazoCancelacion).HasMaxLength(500);
+                e.Property(s => s.CostoServicio).HasPrecision(14, 2);
+                e.Property(s => s.NumeroFacturaServicio).HasMaxLength(50);
+                e.HasOne(s => s.TallerExterno).WithMany().HasForeignKey(s => s.TallerExternoId);
                 // Una sola solicitud abierta (Pendiente o EnTaller) por vehículo.
                 e.HasIndex(s => s.VehiculoId).IsUnique()
                     .HasFilter($"[Estatus] IN ({(int)Domain.Enums.EstatusSolicitudTaller.Pendiente}, {(int)Domain.Enums.EstatusSolicitudTaller.EnTaller})")

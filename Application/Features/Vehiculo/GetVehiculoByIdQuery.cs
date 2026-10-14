@@ -25,6 +25,13 @@ public class VehiculoDetalleViewModel
     public Guid ColorId { get; set; }
     public required string Color { get; set; }
     public string Estatus { get; set; } = string.Empty;
+    public int Kilometraje { get; set; }
+    public DateOnly? GarantiaVence { get; set; }
+    public int? GarantiaKilometraje { get; set; }
+    public Guid? GarantiaTallerId { get; set; }
+    public string? GarantiaTaller { get; set; }
+    /// <summary>Garantía vigente hoy (fecha y kilometraje).</summary>
+    public bool EnGarantia { get; set; }
 }
 
 public class GetVehiculoQueryHandler(IUnitOfWork uow) : IRequestHandler<IDEntityFilterQuery<VehiculoDetalleViewModel>, Result<VehiculoDetalleViewModel>>
@@ -32,6 +39,7 @@ public class GetVehiculoQueryHandler(IUnitOfWork uow) : IRequestHandler<IDEntity
     public async Task<Result<VehiculoDetalleViewModel>> Handle(IDEntityFilterQuery<VehiculoDetalleViewModel> request, CancellationToken cancellationToken)
     {
         var enMision = EstatusVehiculos.EnMision(DateTime.Now);
+        var hoy = DateOnly.FromDateTime(DateTime.Now);
         var vehiculo = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
             .Where(v => v.Id == request.Id)
             .Select(v => new VehiculoDetalleViewModel
@@ -50,7 +58,13 @@ public class GetVehiculoQueryHandler(IUnitOfWork uow) : IRequestHandler<IDEntity
                 Tipo = v.Tipo!.Nombre,
                 ColorId = v.ColorId,
                 Color = v.Color!.Nombre,
-                Estatus = EstatusVehiculos.Resolver(v.Estado, v.Asignaciones!.AsQueryable().Any(enMision)).ToString()
+                Estatus = EstatusVehiculos.Resolver(v.Estado, v.Asignaciones!.AsQueryable().Any(enMision)).ToString(),
+                Kilometraje = v.Kilometraje,
+                GarantiaVence = v.GarantiaVence,
+                GarantiaKilometraje = v.GarantiaKilometraje,
+                GarantiaTallerId = v.GarantiaTallerId,
+                GarantiaTaller = v.GarantiaTaller != null ? v.GarantiaTaller.Nombre : null,
+                EnGarantia = v.GarantiaVence >= hoy && (v.GarantiaKilometraje == null || v.Kilometraje <= v.GarantiaKilometraje)
             })
             .FirstOrDefaultAsync(cancellationToken);
 

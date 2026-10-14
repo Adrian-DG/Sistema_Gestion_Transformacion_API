@@ -18,13 +18,18 @@ namespace Application.Features.Taller.Solicitudes;
 /// <summary>
 /// Registra la solicitud de taller (Pendiente). El vehículo sigue en su estatus hasta el ingreso; no
 /// puede estar inactivo ni tener otra solicitud abierta. El número (ST-año-secuencia) lo genera la API.
+/// Se atiende en el taller interno o en un taller autorizado (<paramref name="TallerExternoId"/>), por
+/// ejemplo el concesionario de un vehículo en garantía. El kilometraje es obligatorio y no puede ser
+/// menor que el último registrado del vehículo.
 /// </summary>
 public record CreateSolicitudTallerCommand(
     Guid VehiculoId,
     TipoSolicitudTaller Tipo,
     Guid SolicitantePersonaId,
     string Motivo,
-    int? Kilometraje
+    int Kilometraje,
+    LugarMantenimiento Lugar = LugarMantenimiento.Interno,
+    Guid? TallerExternoId = null
 ) : IRequest<Result<SolicitudTallerCreadaViewModel>>;
 
 public record SolicitudTallerCreadaViewModel(Guid Id, string Numero);
@@ -37,12 +42,25 @@ public class CreateSolicitudTallerCommandValidator : AbstractValidator<CreateSol
         RuleFor(x => x.Tipo).IsInEnum();
         RuleFor(x => x.SolicitantePersonaId).NotEmpty().WithMessage("El solicitante es obligatorio.");
         RuleFor(x => x.Motivo).NotEmpty().MaximumLength(1000);
-        RuleFor(x => x.Kilometraje).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Kilometraje).GreaterThanOrEqualTo(0).WithMessage("Indique el kilometraje del vehículo.");
+        RuleFor(x => x.Lugar).IsInEnum();
+        RuleFor(x => x.TallerExternoId).NotEmpty()
+            .When(x => x.Lugar == LugarMantenimiento.Externo)
+            .WithMessage("Seleccione el taller autorizado.");
+        RuleFor(x => x.TallerExternoId).Null()
+            .When(x => x.Lugar == LugarMantenimiento.Interno)
+            .WithMessage("Una solicitud del taller interno no lleva taller externo.");
+        RuleFor(x => x.Lugar).Equal(LugarMantenimiento.Interno)
+            .When(x => x.Tipo == TipoSolicitudTaller.EvaluacionBaja)
+            .WithMessage("La evaluación de baja la hace un mecánico del taller interno.");
     }
 }
 
-/// <summary>El vehículo entra al taller con el mecánico asignado y pasa a En mantenimiento.</summary>
-public record IngresarSolicitudTallerCommand(Guid SolicitudId, Guid MecanicoId, int? Kilometraje) : IRequest<Result<IngresoTallerViewModel>>;
+/// <summary>
+/// El vehículo entra al taller y pasa a En mantenimiento. En el taller interno se asigna un mecánico;
+/// en uno externo, no. El kilometraje del ingreso actualiza el del vehículo.
+/// </summary>
+public record IngresarSolicitudTallerCommand(Guid SolicitudId, Guid? MecanicoId, int Kilometraje) : IRequest<Result<IngresoTallerViewModel>>;
 
 /// <param name="AsignacionesAprobadas">
 /// Asignaciones ya aprobadas con salida futura: el vehículo no podrá cumplirlas mientras esté en el
@@ -54,8 +72,7 @@ public class IngresarSolicitudTallerCommandValidator : AbstractValidator<Ingresa
 {
     public IngresarSolicitudTallerCommandValidator()
     {
-        RuleFor(x => x.MecanicoId).NotEmpty().WithMessage("Asigne un mecánico.");
-        RuleFor(x => x.Kilometraje).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Kilometraje).GreaterThanOrEqualTo(0).WithMessage("Indique el kilometraje del vehículo.");
     }
 }
 
@@ -96,7 +113,19 @@ public class AgregarPiezaSolicitudTallerCommandValidator : AbstractValidator<Agr
 /// Cierra la orden con el diagnóstico y el trabajo realizado. Si el mecánico dictamina la baja
 /// (<paramref name="ProcedeBaja"/>), el vehículo pasa a inactivo; si no, vuelve a operativo.
 /// </summary>
-public record FinalizarSolicitudTallerCommand(Guid SolicitudId, string Diagnostico, string TrabajoRealizado, bool ProcedeBaja) : IRequest<Result>;
+/// <remarks>
+/// En una solicitud externa se registra lo que cobró el taller autorizado (<paramref name="CostoServicio"/>,
+/// obligatorio), su factura y la orden de servicio adjunta; no se dictamina baja.
+/// </remarks>
+public record FinalizarSolicitudTallerCommand(
+    Guid SolicitudId,
+    string Diagnostico,
+    string TrabajoRealizado,
+    bool ProcedeBaja,
+    decimal? CostoServicio = null,
+    string? NumeroFacturaServicio = null,
+    List<AdjuntoRequest>? Adjuntos = null
+) : IRequest<Result>;
 
 public class FinalizarSolicitudTallerCommandValidator : AbstractValidator<FinalizarSolicitudTallerCommand>
 {
@@ -104,6 +133,9 @@ public class FinalizarSolicitudTallerCommandValidator : AbstractValidator<Finali
     {
         RuleFor(x => x.Diagnostico).NotEmpty().MaximumLength(2000);
         RuleFor(x => x.TrabajoRealizado).NotEmpty().MaximumLength(2000);
+        RuleFor(x => x.CostoServicio).GreaterThanOrEqualTo(0).PrecisionScale(14, 2, true);
+        RuleFor(x => x.NumeroFacturaServicio).MaximumLength(50);
+        RuleForEach(x => x.Adjuntos).SetValidator(new AdjuntoRequestValidator());
     }
 }
 
@@ -134,13 +166,24 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
     {
         var vehiculo = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
             .Where(v => v.Id == request.VehiculoId)
-            .Select(v => new { v.Placa, v.Estado })
+            .Select(v => new { v.Placa, v.Estado, v.Kilometraje })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (vehiculo is null) return Result.Failure<SolicitudTallerCreadaViewModel>(VehiculoErrors.NotFound(request.VehiculoId));
         if (vehiculo.Estado == EstadoVehiculo.Inactivo)
         {
             return Result.Failure<SolicitudTallerCreadaViewModel>(TallerErrors.VehiculoInactivo(vehiculo.Placa));
+        }
+
+        if (request.Kilometraje < vehiculo.Kilometraje)
+        {
+            return Result.Failure<SolicitudTallerCreadaViewModel>(TallerErrors.KilometrajeMenor(vehiculo.Placa, vehiculo.Kilometraje));
+        }
+
+        if (request.TallerExternoId is { } tallerId &&
+            !await uow.Query<Proveedor>().AnyAsync(p => p.Id == tallerId && p.Status && p.EsTallerAutorizado, cancellationToken))
+        {
+            return Result.Failure<SolicitudTallerCreadaViewModel>(TallerErrors.TallerExternoInvalido(tallerId));
         }
 
         var abierta = await uow.Query<SolicitudTaller>()
@@ -164,6 +207,8 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
                 Id = Guid.NewGuid(),
                 Numero = SolicitudTaller.FormatearNumero(anio, secuencia),
                 Tipo = request.Tipo,
+                Lugar = request.Lugar,
+                TallerExternoId = request.TallerExternoId,
                 Estatus = EstatusSolicitudTaller.Pendiente,
                 FechaSolicitud = DateTime.Now,
                 VehiculoId = request.VehiculoId,
@@ -192,9 +237,24 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
             return Result.Failure<IngresoTallerViewModel>(TallerErrors.VehiculoInactivo(vehiculo.Placa));
         }
 
-        if (!await uow.Query<Mecanico>().AnyAsync(m => m.Id == request.MecanicoId && m.Status, cancellationToken))
+        if (request.Kilometraje < vehiculo.Kilometraje)
         {
-            return Result.Failure<IngresoTallerViewModel>(MecanicoErrors.NotFound(request.MecanicoId));
+            return Result.Failure<IngresoTallerViewModel>(TallerErrors.KilometrajeMenor(vehiculo.Placa, vehiculo.Kilometraje));
+        }
+
+        // El mecánico solo aplica al taller interno; en el externo lo atiende el taller autorizado.
+        Guid? mecanicoId = null;
+        if (!solicitud.EsExterna)
+        {
+            if (request.MecanicoId is not { } id || id == Guid.Empty)
+            {
+                return Result.Failure<IngresoTallerViewModel>(TallerErrors.MecanicoRequerido());
+            }
+            if (!await uow.Query<Mecanico>().AnyAsync(m => m.Id == id && m.Status, cancellationToken))
+            {
+                return Result.Failure<IngresoTallerViewModel>(MecanicoErrors.NotFound(id));
+            }
+            mecanicoId = id;
         }
 
         var ahora = DateTime.Now;
@@ -203,10 +263,11 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
             .AnyAsync(EstatusVehiculos.EnMision(ahora), cancellationToken);
         if (enMision) return Result.Failure<IngresoTallerViewModel>(TallerErrors.VehiculoEnMision(vehiculo.Placa));
 
-        var ingreso = solicitud.Ingresar(request.MecanicoId, ahora, request.Kilometraje);
+        var ingreso = solicitud.Ingresar(mecanicoId, ahora, request.Kilometraje);
         if (ingreso.IsFailure) return Result.Failure<IngresoTallerViewModel>(ingreso.Error);
 
         vehiculo.Estado = EstadoVehiculo.EnMantenimiento;
+        vehiculo.Kilometraje = request.Kilometraje;
 
         var aprobadas = await uow.Query<Asignacion>()
             .CountAsync(a => a.VehiculoId == vehiculo.Id && a.Estatus == EstatusSolicitud.Aprobada && a.FechaSalida > ahora, cancellationToken);
@@ -219,9 +280,13 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
     {
         var solicitud = await uow.Query<SolicitudTaller>()
             .Where(s => s.Id == request.SolicitudId)
-            .Select(s => new { s.Numero, s.Estatus })
+            .Select(s => new { s.Numero, s.Estatus, s.Lugar })
             .FirstOrDefaultAsync(cancellationToken);
         if (solicitud is null) return Result.Failure<PiezaAgregadaViewModel>(TallerErrors.NotFound(request.SolicitudId));
+        if (solicitud.Lugar == LugarMantenimiento.Externo)
+        {
+            return Result.Failure<PiezaAgregadaViewModel>(TallerErrors.SoloInterno(solicitud.Numero));
+        }
         if (solicitud.Estatus != EstatusSolicitudTaller.EnTaller)
         {
             return Result.Failure<PiezaAgregadaViewModel>(TallerErrors.InvalidStatus(solicitud.Numero, solicitud.Estatus.ToString()));
@@ -307,7 +372,27 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
             .FirstOrDefaultAsync(s => s.Id == request.SolicitudId, cancellationToken);
         if (solicitud is null) return Result.Failure(TallerErrors.NotFound(request.SolicitudId));
 
-        var resultado = solicitud.Finalizar(request.Diagnostico.Trim(), request.TrabajoRealizado.Trim(), request.ProcedeBaja, DateTime.Now);
+        Result resultado;
+        if (solicitud.EsExterna)
+        {
+            if (request.ProcedeBaja) return Result.Failure(TallerErrors.SoloInterno(solicitud.Numero));
+            if (request.CostoServicio is not { } costo)
+            {
+                return Result.Failure(Error.Validation(
+                    "Taller.CostoServicioRequerido", "Indique lo que cobró el taller autorizado por el servicio."));
+            }
+
+            var factura = string.IsNullOrWhiteSpace(request.NumeroFacturaServicio) ? null : request.NumeroFacturaServicio.Trim();
+            resultado = solicitud.FinalizarExterna(request.Diagnostico.Trim(), request.TrabajoRealizado.Trim(), costo, factura, DateTime.Now);
+            if (resultado.IsSuccess && request.Adjuntos is { Count: > 0 })
+            {
+                await uow.AddRangeAsync(request.Adjuntos.Select(a => a.ToEntity(TiposOperacion.SolicitudTaller, solicitud.Id)), cancellationToken);
+            }
+        }
+        else
+        {
+            resultado = solicitud.Finalizar(request.Diagnostico.Trim(), request.TrabajoRealizado.Trim(), request.ProcedeBaja, DateTime.Now);
+        }
         if (resultado.IsFailure) return resultado;
 
         solicitud.Vehiculo!.Estado = request.ProcedeBaja ? EstadoVehiculo.Inactivo : EstadoVehiculo.Operativo;

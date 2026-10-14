@@ -74,7 +74,8 @@ namespace API.Controllers
         [AppAuthorize(AppPolicy.CanManageTaller)]
         public async Task<IActionResult> Finalizar([FromRoute] Guid id, [FromBody] FinalizarRequest request, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new FinalizarSolicitudTallerCommand(id, request.Diagnostico, request.TrabajoRealizado, request.ProcedeBaja), cancellationToken);
+            var result = await _mediator.Send(new FinalizarSolicitudTallerCommand(id, request.Diagnostico, request.TrabajoRealizado,
+                request.ProcedeBaja, request.CostoServicio, request.NumeroFacturaServicio, request.Adjuntos), cancellationToken);
             return HandleResult(result);
         }
 
@@ -95,7 +96,7 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
-        /// <summary>Descarga una factura de entrada o un recibo de compra directa.</summary>
+        /// <summary>Descarga una factura de entrada, un recibo de compra directa o una factura de servicio externo.</summary>
         [HttpGet("adjuntos/{id:Guid}")]
         [AppAuthorize(AppPermission.GestionTaller, AppPermission.GestionInventarioPiezas, AppPermission.Administrador)]
         public async Task<IActionResult> GetAdjunto([FromRoute] Guid id, CancellationToken cancellationToken)
@@ -150,6 +151,17 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        // Vehículos
+
+        /// <summary>Kilometraje y garantía del vehículo, para elegir el taller interno o el autorizado.</summary>
+        [HttpGet("vehiculos/{vehiculoId:Guid}/garantia")]
+        [AppAuthorize(AppPolicy.CanManageTaller)]
+        public async Task<IActionResult> GetGarantia([FromRoute] Guid vehiculoId, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetGarantiaVehiculoQuery(vehiculoId), cancellationToken);
+            return HandleResult(result);
+        }
+
         // Reactivación
 
         /// <summary>Reactiva por excepción un vehículo inactivo; queda en su historial de mantenimientos.</summary>
@@ -162,11 +174,19 @@ namespace API.Controllers
         }
     }
 
-    public record IngresoRequest(Guid MecanicoId, int? Kilometraje);
+    /// <summary><c>mecanicoId</c> solo en el taller interno.</summary>
+    public record IngresoRequest(Guid? MecanicoId, int Kilometraje);
 
     public record PiezaRequest(Guid PiezaId, decimal Cantidad, CompraPiezaRequest? Compra);
 
-    public record FinalizarRequest(string Diagnostico, string TrabajoRealizado, bool ProcedeBaja);
+    /// <summary>Costo, factura y adjuntos solo en solicitudes externas (taller autorizado).</summary>
+    public record FinalizarRequest(
+        string Diagnostico,
+        string TrabajoRealizado,
+        bool ProcedeBaja,
+        decimal? CostoServicio = null,
+        string? NumeroFacturaServicio = null,
+        List<AdjuntoRequest>? Adjuntos = null);
 
     public record DatosMecanicoRequest(string? Especialidad, string? Telefono, bool Activo);
 }

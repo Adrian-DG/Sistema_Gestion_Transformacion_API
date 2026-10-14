@@ -38,7 +38,9 @@ namespace Infraestructure.Data.Seed.Demo
                     ModeloId = modeloId,
                     TipoId = tipoId,
                     ColorId = colorId,
-                    Estado = estado
+                    Estado = estado,
+                    // Uso aproximado de 15,000 km por año.
+                    Kilometraje = Math.Max(demo.Ahora.Year - fabricacion, 0) * 15000 + secuencia * 731
                 });
             }
 

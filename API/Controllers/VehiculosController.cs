@@ -64,7 +64,8 @@ namespace API.Controllers
         public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] DatosVehiculoRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdateVehiculoCommand(id, request.Chasis, request.Matricula, request.Placa, request.Fabricacion,
-                request.MarcaId, request.ModeloId, request.TipoId, request.ColorId, request.Ficha);
+                request.MarcaId, request.ModeloId, request.TipoId, request.ColorId, request.Ficha,
+                request.Kilometraje, request.GarantiaVence, request.GarantiaKilometraje, request.GarantiaTallerId);
 
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
@@ -80,5 +81,9 @@ namespace API.Controllers
         Guid ModeloId,
         Guid TipoId,
         Guid ColorId,
-        string? Ficha = null);
+        string? Ficha = null,
+        int Kilometraje = 0,
+        DateOnly? GarantiaVence = null,
+        int? GarantiaKilometraje = null,
+        Guid? GarantiaTallerId = null);
 }

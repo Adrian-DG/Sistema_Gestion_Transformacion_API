@@ -14,5 +14,7 @@ namespace Domain.Constants
         public static readonly Guid EntradaPieza = new("6f1f1d2a-3c1e-4b7a-9a51-0b7c2d9e1a05");
         /// <summary>Recibo de una pieza comprada para una orden de taller (Id del MovimientoPieza de compra directa).</summary>
         public static readonly Guid CompraPieza = new("6f1f1d2a-3c1e-4b7a-9a51-0b7c2d9e1a06");
+        /// <summary>Factura u orden de servicio del taller autorizado (Id de SolicitudTaller externa).</summary>
+        public static readonly Guid SolicitudTaller = new("6f1f1d2a-3c1e-4b7a-9a51-0b7c2d9e1a07");
     }
 }

@@ -45,6 +45,15 @@ public class SolicitudTallerViewModel
 
     /// <summary>Costo de las piezas utilizadas (sin las devueltas al cancelar).</summary>
     public decimal CostoPiezas { get; set; }
+
+    /// <summary>Interno (taller de la institución) o Externo (taller autorizado).</summary>
+    public string Lugar { get; set; } = string.Empty;
+    public Guid? TallerExternoId { get; set; }
+    public string? TallerExterno { get; set; }
+    /// <summary>Lo que cobró el taller autorizado (solicitudes externas finalizadas).</summary>
+    public decimal? CostoServicio { get; set; }
+    public string? NumeroFacturaServicio { get; set; }
+    public decimal CostoTotal => CostoPiezas + (CostoServicio ?? 0);
 }
 
 /// <summary>
@@ -55,6 +64,7 @@ public record FiltroSolicitudesTallerQuery : PaginationFilterQuery<SolicitudTall
 {
     public EstatusSolicitudTaller? Estatus { get; set; }
     public TipoSolicitudTaller? Tipo { get; set; }
+    public LugarMantenimiento? Lugar { get; set; }
     public Guid? VehiculoId { get; set; }
     public Guid? MecanicoId { get; set; }
 }
@@ -66,6 +76,7 @@ public class FiltroSolicitudesTallerQueryValidator : AbstractValidator<FiltroSol
         Include(new PaginationFilterQueryValidator<SolicitudTallerViewModel>());
         RuleFor(x => x.Estatus).IsInEnum();
         RuleFor(x => x.Tipo).IsInEnum();
+        RuleFor(x => x.Lugar).IsInEnum();
     }
 }
 
@@ -97,7 +108,12 @@ internal static class SolicitudesTallerProyeccion
             MotivoRechazoCancelacion = s.MotivoRechazoCancelacion,
             CostoPiezas = s.Movimientos
                 .Where(m => m.Status && (m.Concepto == ConceptoMovimientoPieza.Consumo || m.Concepto == ConceptoMovimientoPieza.Devolucion))
-                .Sum(m => (m.Concepto == ConceptoMovimientoPieza.Consumo ? 1 : -1) * m.Cantidad * m.CostoUnitario)
+                .Sum(m => (m.Concepto == ConceptoMovimientoPieza.Consumo ? 1 : -1) * m.Cantidad * m.CostoUnitario),
+            Lugar = s.Lugar.ToString(),
+            TallerExternoId = s.TallerExternoId,
+            TallerExterno = s.TallerExterno != null ? s.TallerExterno.Nombre : null,
+            CostoServicio = s.CostoServicio,
+            NumeroFacturaServicio = s.NumeroFacturaServicio
         });
 }
 
@@ -110,6 +126,7 @@ public class GetSolicitudesTallerQueryHandler(IUnitOfWork uow)
 
         if (request.Estatus is { } estatus) query = query.Where(s => s.Estatus == estatus);
         if (request.Tipo is { } tipo) query = query.Where(s => s.Tipo == tipo);
+        if (request.Lugar is { } lugar) query = query.Where(s => s.Lugar == lugar);
         if (request.VehiculoId is { } vehiculoId) query = query.Where(s => s.VehiculoId == vehiculoId);
         if (request.MecanicoId is { } mecanicoId) query = query.Where(s => s.MecanicoId == mecanicoId);
 
@@ -146,6 +163,8 @@ public class SolicitudTallerDetalleViewModel
     public List<CompraDirectaViewModel> Compras { get; set; } = [];
     /// <summary>Piezas devueltas al inventario al cancelar la orden.</summary>
     public List<PiezaUtilizadaViewModel> Devoluciones { get; set; } = [];
+    /// <summary>Factura u orden de servicio del taller autorizado (solicitudes externas).</summary>
+    public List<AdjuntoResumenViewModel> AdjuntosServicio { get; set; } = [];
 }
 
 public class PiezaUtilizadaViewModel
@@ -198,9 +217,15 @@ public class GetSolicitudTallerQueryHandler(IUnitOfWork uow)
             .Select(a => new { a.IdentificadorOperacion, Adjunto = new AdjuntoResumenViewModel { Id = a.Id, NombreArchivo = a.NombreArchivo, ContentType = a.ContentType } })
             .ToListAsync(cancellationToken);
 
+        var adjuntosServicio = await uow.Query<Adjunto>()
+            .Where(a => a.TipoOperacionId == TiposOperacion.SolicitudTaller && a.IdentificadorOperacion == request.Id)
+            .Select(a => new AdjuntoResumenViewModel { Id = a.Id, NombreArchivo = a.NombreArchivo, ContentType = a.ContentType })
+            .ToListAsync(cancellationToken);
+
         return Result.Success(new SolicitudTallerDetalleViewModel
         {
             Solicitud = solicitud,
+            AdjuntosServicio = adjuntosServicio,
             Piezas = movimientos.Where(m => m.Concepto == ConceptoMovimientoPieza.Consumo).Select(m => m.ALinea()).ToList(),
             Devoluciones = movimientos.Where(m => m.Concepto == ConceptoMovimientoPieza.Devolucion).Select(m => m.ALinea()).ToList(),
             Compras = movimientos
@@ -338,7 +363,8 @@ public class GetAdjuntoTallerQueryHandler(IUnitOfWork uow) : IRequestHandler<Get
     {
         var archivo = await uow.Query<Adjunto>()
             .Where(a => a.Id == request.Id &&
-                (a.TipoOperacionId == TiposOperacion.EntradaPieza || a.TipoOperacionId == TiposOperacion.CompraPieza))
+                (a.TipoOperacionId == TiposOperacion.EntradaPieza || a.TipoOperacionId == TiposOperacion.CompraPieza ||
+                 a.TipoOperacionId == TiposOperacion.SolicitudTaller))
             .Select(a => new ArchivoAdjunto(a.File, a.ContentType, a.NombreArchivo))
             .FirstOrDefaultAsync(cancellationToken);
 

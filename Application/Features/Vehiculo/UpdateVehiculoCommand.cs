@@ -21,7 +21,11 @@ public record UpdateVehiculoCommand(
     Guid ModeloId,
     Guid TipoId,
     Guid ColorId,
-    string? Ficha = null
+    string? Ficha = null,
+    int Kilometraje = 0,
+    DateOnly? GarantiaVence = null,
+    int? GarantiaKilometraje = null,
+    Guid? GarantiaTallerId = null
 ): IRequest<Result>, IDatosVehiculo;
 
 public class UpdateVehiculoCommandValidator : DatosVehiculoValidator<UpdateVehiculoCommand>
