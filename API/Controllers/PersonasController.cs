@@ -31,5 +31,18 @@ namespace API.Controllers
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
         }
+
+        /// <summary>
+        /// Devuelve el Id de la persona con esa cédula; si no está registrada, la crea con sus datos de SIPFFAA.
+        /// Lo usan los formularios de solicitudes al elegir un miembro en el buscador de SIPFFAA.
+        /// </summary>
+        [HttpPost("sipffaa/{cedula}")]
+        [AppAuthorize(AppPermission.GestionPersonas, AppPermission.GestionAsignaciones,
+            AppPermission.GestionCombustible, AppPermission.Administrador)]
+        public async Task<IActionResult> ImportarDeSipffaa([FromRoute] string cedula, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ImportarPersonaSipffaaCommand(cedula), cancellationToken);
+            return HandleResult(result);
+        }
     }
 }

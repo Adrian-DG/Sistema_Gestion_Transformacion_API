@@ -6,12 +6,17 @@ using Domain.Enums;
 namespace Domain.Entities.Combustible
 {
     /// <summary>
-    /// Ticket de combustible (actualmente pre-impreso con su número y galones).
+    /// Ticket de combustible. Su número lo genera el sistema en secuencia anual (TC-2026-000001).
     /// Se consume completo; quien lo recibe puede cederlo, solo se controla
     /// a quién se entregó y cuándo fue utilizado.
     /// </summary>
     public class TicketCombustible : BaseEntityMetadata, IAuditableEntityMetadata
     {
+        /// <summary>Código de la <see cref="Configuracion.Secuencia"/> que numera los tickets.</summary>
+        public const string CodigoSecuencia = "TicketCombustible";
+
+        public static string FormatearNumero(int anio, long secuencia) => $"TC-{anio}-{secuencia:D6}";
+
         public required string Numero { get; set; }
         public TipoCombustible TipoCombustible { get; set; }
         public decimal Galones { get; set; }

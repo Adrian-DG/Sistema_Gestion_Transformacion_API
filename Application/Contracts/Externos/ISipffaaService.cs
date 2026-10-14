@@ -6,6 +6,9 @@ namespace Application.Contracts.Externos;
 public interface ISipffaaService
 {
     Task<MiembroExternoDto?> GetMiembroByCedulaAsync(string cedula, CancellationToken cancellationToken);
+
+    /// <summary>Miembros activos por inicio de cédula (si el texto son dígitos) o por nombre.</summary>
+    Task<IReadOnlyList<MiembroExternoDto>> BuscarMiembrosAsync(string texto, int maxResultados, CancellationToken cancellationToken);
     Task<IReadOnlyList<CargoExternoDto>> BuscarCargosAsync(string nombre, int maxResultados, CancellationToken cancellationToken);
 
     /// <summary>Departamentos activos cuyo nombre o descripción contienen el texto indicado.</summary>

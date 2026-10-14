@@ -20,18 +20,37 @@ namespace Infraestructure.External.Sipffaa
         /// </remarks>
         public const string MiembroPorCedula = $"""
             SELECT TOP (1)
-                m.CodMiembro, m.Cedula,
-                m.PrimerNombre, m.SegundoNombre, m.PrimerApellido, m.SegundoApellido,
-                m.NombreApellidoCompleto AS NombreCompleto,
-                m.sexo AS Sexo, m.EsMilitar,
-                m.CodInstitucion, m.SiglasInstitucion, m.Institucion,
-                m.CodRango, m.Rango, m.RangoAbreviado,
-                m.CodDepartamento, m.Departamento,
-                m.CodCargo, m.Cargo, m.DescripcionCargo,
-                m.EstadoMiembro, m.LicenciaConducir, m.NoCarnet, m.Status
+                {ColumnasMiembro}
             FROM {VistaMiembros} m
             WHERE REPLACE(m.Cedula, '-', '') = @Cedula
             ORDER BY m.Status DESC, m.FechaCreacion DESC
+            """;
+
+        /// <summary>Columnas de <see cref="Application.Contracts.Externos.MiembroExternoDto"/>; requiere el alias m.</summary>
+        private const string ColumnasMiembro = """
+            m.CodMiembro, m.Cedula,
+            m.PrimerNombre, m.SegundoNombre, m.PrimerApellido, m.SegundoApellido,
+            m.NombreApellidoCompleto AS NombreCompleto,
+            m.sexo AS Sexo, m.EsMilitar,
+            m.CodInstitucion, m.SiglasInstitucion, m.Institucion,
+            m.CodRango, m.Rango, m.RangoAbreviado,
+            m.CodDepartamento, m.Departamento,
+            m.CodCargo, m.Cargo, m.DescripcionCargo,
+            m.EstadoMiembro, m.LicenciaConducir, m.NoCarnet, m.Status
+            """;
+
+        /// <remarks>
+        /// Miembros activos cuya cédula empieza por @CedulaPrefijo (solo dígitos) o cuyo nombre contiene
+        /// @Patron; el servicio envía uno u otro según el texto buscado. Ordena por rango (NoOrdenRango) y nombre.
+        /// </remarks>
+        public const string MiembrosPorTexto = $"""
+            SELECT TOP (@MaxResultados)
+                {ColumnasMiembro}
+            FROM {VistaMiembros} m
+            WHERE m.Status = 1
+              AND ((@CedulaPrefijo IS NOT NULL AND REPLACE(m.Cedula, '-', '') LIKE @CedulaPrefijo + '%')
+                OR (@Patron IS NOT NULL AND m.NombreApellidoCompleto LIKE @Patron))
+            ORDER BY m.NoOrdenRango, m.NombreApellidoCompleto
             """;
 
         /// <summary>Tabla de cargos (entidad CARGO del sistema SIPFFAA).</summary>

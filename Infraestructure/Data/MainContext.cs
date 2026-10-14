@@ -92,7 +92,7 @@ namespace Infraestructure.Data
             {
                 e.ToTable("Tickets", "combustible", t => t.HasCheckConstraint("CK_Tickets_Galones", "[Galones] > 0"));
                 e.Property(t => t.Galones).HasPrecision(10, 2);
-                // Un número anulado (error de digitación) puede volver a registrarse.
+                // Los anulados quedan fuera del índice: los tickets pre-impresos anulados podían volver a registrarse.
                 e.HasIndex(t => t.Numero).IsUnique().HasFilter($"[Estatus] <> {(int)Domain.Enums.EstatusTicket.Anulado}");
             });
 
@@ -120,6 +120,13 @@ namespace Infraestructure.Data
             });
 
             // Configuration entities
+            builder.Entity<Secuencia>(e =>
+            {
+                e.ToTable("Secuencias", "configuracion");
+                e.HasKey(s => new { s.Codigo, s.Anio });
+                e.Property(s => s.Codigo).HasMaxLength(50);
+            });
+
             builder.Entity<Apariencia>(e =>
             {
                 var colores = new[] { "ColorPrimario", "ColorSecundario", "ColorBotonPrimario", "ColorBotonSecundario", "ColorBotonPeligro" };
@@ -236,6 +243,7 @@ namespace Infraestructure.Data
         public DbSet<TicketCombustible> Tickets { get; set; }
         public DbSet<MovimientoCombustible> MovimientosCombustible { get; set; }
 
+        public DbSet<Secuencia> Secuencias { get; set; }
         public DbSet<Apariencia> Apariencia { get; set; }
         public DbSet<PlantillaReporte> PlantillasReporte { get; set; }
         public DbSet<PlantillaReporteLogo> PlantillaReporteLogos { get; set; }

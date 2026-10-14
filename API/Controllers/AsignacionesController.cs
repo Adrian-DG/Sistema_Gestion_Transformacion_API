@@ -19,9 +19,17 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] PaginationFilterQuery<AsignacionViewModel> query, CancellationToken cancellationToken)
+        public async Task<IActionResult> Get([FromQuery] FiltroAsignacionesQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Vehículos en servicio sin asignaciones aprobadas que choquen con el período.</summary>
+        [HttpGet("vehiculos-disponibles")]
+        public async Task<IActionResult> GetVehiculosDisponibles([FromQuery] DateTime salida, [FromQuery] DateTime retornoEstimado, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetVehiculosDisponiblesQuery(salida, retornoEstimado), cancellationToken);
             return HandleResult(result);
         }
 

@@ -1,4 +1,4 @@
-using API.Security;
+﻿using API.Security;
 using Application.Common.DTO;
 using Application.Features.Combustible.Movimientos;
 using Application.Features.Combustible.Tickets;
@@ -45,7 +45,7 @@ namespace API.Controllers
         // Tickets
 
         [HttpGet("solicitudes-ticket")]
-        public async Task<IActionResult> GetSolicitudesTicket([FromQuery] PaginationFilterQuery<SolicitudTicketViewModel> query, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetSolicitudesTicket([FromQuery] FiltroSolicitudesTicketQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
             return HandleResult(result);
@@ -76,6 +76,14 @@ namespace API.Controllers
         public async Task<IActionResult> CancelarSolicitudTicket([FromRoute] Guid id, [FromBody] MotivoRequest request, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new CancelarSolicitudTicketCommand(id, request.Motivo), cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Número que recibiría el próximo ticket (referencial; se asigna al registrar la solicitud).</summary>
+        [HttpGet("tickets/siguiente-numero")]
+        public async Task<IActionResult> GetSiguienteNumeroTicket(CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetSiguienteNumeroTicketQuery(), cancellationToken);
             return HandleResult(result);
         }
 

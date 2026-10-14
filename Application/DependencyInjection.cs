@@ -35,10 +35,8 @@ namespace Application
             // is open generic and the built-in container can't auto-wire IValidator<PaginationFilterQuery<T>> from
             // it, so each concrete paginated ViewModel needs an explicit registration.
             services.AddScoped<IValidator<PaginationFilterQuery<VehiculoViewModel>>, PaginationFilterQueryValidator<VehiculoViewModel>>();
-            services.AddScoped<IValidator<PaginationFilterQuery<AsignacionViewModel>>, PaginationFilterQueryValidator<AsignacionViewModel>>();
             services.AddScoped<IValidator<PaginationFilterQuery<PolizaViewModel>>, PaginationFilterQueryValidator<PolizaViewModel>>();
             services.AddScoped<IValidator<PaginationFilterQuery<PersonaViewModel>>, PaginationFilterQueryValidator<PersonaViewModel>>();
-            services.AddScoped<IValidator<PaginationFilterQuery<SolicitudTicketViewModel>>, PaginationFilterQueryValidator<SolicitudTicketViewModel>>();
             services.AddScoped<IValidator<PaginationFilterQuery<MovimientoCombustibleViewModel>>, PaginationFilterQueryValidator<MovimientoCombustibleViewModel>>();
 
             services.AddAutoMapper(cfg => cfg.AddMaps(assembly));

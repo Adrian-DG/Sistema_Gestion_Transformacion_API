@@ -1,10 +1,12 @@
-using Application.Common.DTO;
+﻿using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
 using Domain.Entities.Combustible;
+using Domain.Entities.Configuracion;
 using Domain.Enums;
+using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,7 +30,10 @@ public class SolicitudTicketViewModel
     public Guid Id { get; set; }
     public required string Estatus { get; set; }
     public required string TipoBeneficiario { get; set; }
+    /// <summary>Cargo o persona a quien se entregan los tickets.</summary>
     public string? EntregadoA { get; set; }
+    /// <summary>Cédula de la persona, cuando se entregan a título personal.</summary>
+    public string? EntregadoACedula { get; set; }
     public required string Solicitante { get; set; }
     public required string SolicitanteCedula { get; set; }
     public required string CargoSolicitante { get; set; }
@@ -43,10 +48,43 @@ public class SolicitudTicketViewModel
 
 public record GetTicketByNumeroQuery(string Numero) : IRequest<Result<TicketViewModel>>;
 
+/// <summary>Listado de solicitudes de tickets con filtro opcional por estado.</summary>
+public record FiltroSolicitudesTicketQuery : PaginationFilterQuery<SolicitudTicketViewModel>
+{
+    public EstatusSolicitud? Estatus { get; set; }
+}
+
+public class FiltroSolicitudesTicketQueryValidator : AbstractValidator<FiltroSolicitudesTicketQuery>
+{
+    public FiltroSolicitudesTicketQueryValidator()
+    {
+        Include(new PaginationFilterQueryValidator<SolicitudTicketViewModel>());
+        RuleFor(x => x.Estatus).IsInEnum();
+    }
+}
+
+/// <summary>
+/// Número que recibiría el próximo ticket. Es referencial: si otro usuario registra antes, la
+/// solicitud recibe los siguientes.
+/// </summary>
+public record GetSiguienteNumeroTicketQuery : IRequest<Result<string>>;
+
 public class GetTicketsQueryHandler(IUnitOfWork uow) :
     IRequestHandler<GetTicketByNumeroQuery, Result<TicketViewModel>>,
-    IRequestHandler<PaginationFilterQuery<SolicitudTicketViewModel>, Result<PagedData<SolicitudTicketViewModel>>>
+    IRequestHandler<FiltroSolicitudesTicketQuery, Result<PagedData<SolicitudTicketViewModel>>>,
+    IRequestHandler<GetSiguienteNumeroTicketQuery, Result<string>>
 {
+    public async Task<Result<string>> Handle(GetSiguienteNumeroTicketQuery request, CancellationToken cancellationToken)
+    {
+        var anio = DateTime.Now.Year;
+        var ultimo = await uow.Query<Secuencia>()
+            .Where(s => s.Codigo == TicketCombustible.CodigoSecuencia && s.Anio == anio)
+            .Select(s => (long?)s.Ultimo)
+            .FirstOrDefaultAsync(cancellationToken) ?? 0;
+
+        return Result.Success(TicketCombustible.FormatearNumero(anio, ultimo + 1));
+    }
+
     public async Task<Result<TicketViewModel>> Handle(GetTicketByNumeroQuery request, CancellationToken cancellationToken)
     {
         var numero = request.Numero.Trim();
@@ -74,15 +112,28 @@ public class GetTicketsQueryHandler(IUnitOfWork uow) :
             : Result.Failure<TicketViewModel>(TicketCombustibleErrors.NotFound(numero));
     }
 
-    public async Task<Result<PagedData<SolicitudTicketViewModel>>> Handle(PaginationFilterQuery<SolicitudTicketViewModel> request, CancellationToken cancellationToken)
+    public async Task<Result<PagedData<SolicitudTicketViewModel>>> Handle(FiltroSolicitudesTicketQuery request, CancellationToken cancellationToken)
     {
         var query = uow.Query<SolicitudTicket>().Where(s => s.Status);
 
+        if (request.Estatus.HasValue)
+        {
+            query = query.Where(s => s.Estatus == request.Estatus);
+        }
+
         if (!string.IsNullOrWhiteSpace(request.Param))
         {
+            var texto = request.Param.Trim();
             query = query.Where(s =>
-                s.Proposito.Contains(request.Param) ||
-                s.Tickets.Any(t => t.Numero.Contains(request.Param)));
+                s.Proposito.Contains(texto) ||
+                s.DependenciaSolicitante.Contains(texto) ||
+                s.CargoSolicitante.Contains(texto) ||
+                (s.Cargo != null && s.Cargo.Contains(texto)) ||
+                (s.SolicitantePersona!.Nombre + " " + s.SolicitantePersona.Apellido).Contains(texto) ||
+                s.SolicitantePersona.Identificacion.Contains(texto) ||
+                (s.Persona != null && ((s.Persona.Nombre + " " + s.Persona.Apellido).Contains(texto) ||
+                                       s.Persona.Identificacion.Contains(texto))) ||
+                s.Tickets.Any(t => t.Numero.Contains(texto)));
         }
 
         var totalRecords = await query.CountAsync(cancellationToken);
@@ -99,6 +150,7 @@ public class GetTicketsQueryHandler(IUnitOfWork uow) :
                 EntregadoA = s.Cargo != null
                     ? s.Cargo
                     : s.Persona!.Apellido + " " + s.Persona.Nombre,
+                EntregadoACedula = s.Persona != null ? s.Persona.Identificacion : null,
                 Solicitante = s.SolicitantePersona!.Apellido + " " + s.SolicitantePersona.Nombre,
                 SolicitanteCedula = s.SolicitantePersona.Identificacion,
                 CargoSolicitante = s.CargoSolicitante,

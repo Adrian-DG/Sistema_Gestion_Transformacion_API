@@ -19,6 +19,17 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        /// <summary>
+        /// Miembros activos para autocompletar: si <c>texto</c> son dígitos busca por inicio de cédula
+        /// (con o sin guiones); si no, por nombre.
+        /// </summary>
+        [HttpGet("miembros")]
+        public async Task<IActionResult> BuscarMiembros([FromQuery] string texto, [FromQuery] int maxResultados = 20, CancellationToken cancellationToken = default)
+        {
+            var result = await _mediator.Send(new BuscarMiembrosExternosQuery(texto, maxResultados), cancellationToken);
+            return HandleResult(result);
+        }
+
         [HttpGet("cargos")]
         public async Task<IActionResult> BuscarCargos([FromQuery] string nombre, [FromQuery] int maxResultados = 20, CancellationToken cancellationToken = default)
         {

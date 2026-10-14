@@ -2,6 +2,8 @@ using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Contracts;
 using Domain.Common;
+using Domain.Enums;
+using FluentValidation;
 using MediatR;
 
 namespace Application.Features.Historico.Asignaciones;
@@ -46,9 +48,24 @@ public class AsignacionViewModel
     public int CantidadAdjuntos { get; set; }
 }
 
-public class GetAsignacionesQuery(IUnitOfWork unitOfWork) : IRequestHandler<PaginationFilterQuery<AsignacionViewModel>, Result<PagedData<AsignacionViewModel>>>
+/// <summary>Listado paginado; <see cref="Param"/> busca por texto y <see cref="Estatus"/> filtra por estado.</summary>
+public record FiltroAsignacionesQuery : PaginationFilterQuery<AsignacionViewModel>
 {
-    public async Task<Result<PagedData<AsignacionViewModel>>> Handle(PaginationFilterQuery<AsignacionViewModel> request, CancellationToken cancellationToken)
+    public EstatusSolicitud? Estatus { get; set; }
+}
+
+public class FiltroAsignacionesQueryValidator : AbstractValidator<FiltroAsignacionesQuery>
+{
+    public FiltroAsignacionesQueryValidator()
+    {
+        Include(new PaginationFilterQueryValidator<AsignacionViewModel>());
+        RuleFor(x => x.Estatus).IsInEnum();
+    }
+}
+
+public class GetAsignacionesQuery(IUnitOfWork unitOfWork) : IRequestHandler<FiltroAsignacionesQuery, Result<PagedData<AsignacionViewModel>>>
+{
+    public async Task<Result<PagedData<AsignacionViewModel>>> Handle(FiltroAsignacionesQuery request, CancellationToken cancellationToken)
     {
         var data = await unitOfWork.AsignacionRepository.Get(request, cancellationToken);
         return Result.Success(data);

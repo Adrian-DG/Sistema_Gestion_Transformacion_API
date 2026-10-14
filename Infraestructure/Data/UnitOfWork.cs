@@ -55,6 +55,21 @@ namespace Infraestructure.Data
             return context.SaveChangesAsync(cancellationToken);
         }
 
+        public async Task<long> ReservarSecuenciaAsync(string codigo, int anio, int cantidad, CancellationToken cancellationToken)
+        {
+            // Incremento atómico (HOLDLOCK evita que dos inserciones del primer número del año choquen).
+            var ultimo = await context.Database.SqlQuery<long>($"""
+                MERGE [configuracion].[Secuencias] WITH (HOLDLOCK) AS s
+                USING (SELECT {codigo} AS Codigo, {anio} AS Anio) AS o
+                    ON s.[Codigo] = o.Codigo AND s.[Anio] = o.Anio
+                WHEN MATCHED THEN UPDATE SET s.[Ultimo] = s.[Ultimo] + {cantidad}
+                WHEN NOT MATCHED THEN INSERT ([Codigo], [Anio], [Ultimo]) VALUES (o.Codigo, o.Anio, {cantidad})
+                OUTPUT inserted.[Ultimo] AS [Value];
+                """).ToListAsync(cancellationToken);
+
+            return ultimo.Single() - cantidad + 1;
+        }
+
         public async Task<TResult> EnTransaccionAsync<TResult>(Func<Task<TResult>> operacion, CancellationToken cancellationToken)
             where TResult : Domain.Common.Result
         {

@@ -18,14 +18,25 @@ namespace Infraestructure.Repositories.Historico
             await context.Asignaciones.AddAsync(asignacion, cancellationToken);
         }
 
-        public async Task<PagedData<AsignacionViewModel>> Get(PaginationFilterQuery<AsignacionViewModel> filter, CancellationToken cancellationToken)
+        /// <summary>Las de salida más reciente primero; busca por propósito, destino, dependencia, vehículo, nombres o cédulas.</summary>
+        public async Task<PagedData<AsignacionViewModel>> Get(FiltroAsignacionesQuery filter, CancellationToken cancellationToken)
         {
             var query = context.Asignaciones.AsQueryable();
+
+            if (filter.Estatus is { } estatus)
+            {
+                query = query.Where(x => x.Estatus == estatus);
+            }
 
             if (!string.IsNullOrWhiteSpace(filter.Param))
             {
                 query = query.Where(x =>
                     x.Proposito.Contains(filter.Param) ||
+                    (x.Destino != null && x.Destino.Contains(filter.Param)) ||
+                    x.DependenciaSolicitante.Contains(filter.Param) ||
+                    (x.SolicitantePersona!.Nombre + " " + x.SolicitantePersona.Apellido).Contains(filter.Param) ||
+                    (x.Persona!.Nombre + " " + x.Persona.Apellido).Contains(filter.Param) ||
+                    (x.ChoferPersona!.Nombre + " " + x.ChoferPersona.Apellido).Contains(filter.Param) ||
                     x.SolicitantePersona!.Identificacion.Contains(filter.Param) ||
                     x.Persona!.Identificacion.Contains(filter.Param) ||
                     x.ChoferPersona!.Identificacion.Contains(filter.Param) ||

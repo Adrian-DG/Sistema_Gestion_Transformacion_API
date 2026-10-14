@@ -22,6 +22,13 @@ namespace Application.Contracts
         void Remove<TEntity>(TEntity entity) where TEntity : class;
         Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Reserva <paramref name="cantidad"/> números consecutivos de la secuencia del año y devuelve el
+        /// primero. Usarlo dentro de <see cref="EnTransaccionAsync"/>: la fila queda bloqueada hasta
+        /// confirmar, así los números son únicos y, si el registro falla, no se pierden.
+        /// </summary>
+        Task<long> ReservarSecuenciaAsync(string codigo, int anio, int cantidad, CancellationToken cancellationToken);
+
         /// <summary>Ejecuta la operación dentro de una transacción; se confirma solo si devuelve éxito.</summary>
         Task<TResult> EnTransaccionAsync<TResult>(Func<Task<TResult>> operacion, CancellationToken cancellationToken) where TResult : Domain.Common.Result;
     }

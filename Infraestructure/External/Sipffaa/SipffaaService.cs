@@ -21,6 +21,29 @@ namespace Infraestructure.External.Sipffaa
             return await connection.QueryFirstOrDefaultAsync<MiembroExternoDto>(command);
         }
 
+        /// <summary>Si el texto son solo dígitos (con o sin guiones) busca por inicio de cédula; si no, por nombre.</summary>
+        public async Task<IReadOnlyList<MiembroExternoDto>> BuscarMiembrosAsync(string texto, int maxResultados, CancellationToken cancellationToken)
+        {
+            using var connection = connectionFactory.CreateConnection();
+
+            var limpio = texto.Trim();
+            var digitos = NormalizarCedula(limpio);
+            var esCedula = digitos.Length > 0 && digitos.All(char.IsDigit);
+
+            var command = new CommandDefinition(
+                SipffaaQueries.MiembrosPorTexto,
+                new
+                {
+                    CedulaPrefijo = esCedula ? digitos : null,
+                    Patron = esCedula ? null : $"%{EscaparLike(limpio)}%",
+                    MaxResultados = maxResultados
+                },
+                commandTimeout: CommandTimeoutSeconds,
+                cancellationToken: cancellationToken);
+
+            return (await connection.QueryAsync<MiembroExternoDto>(command)).AsList();
+        }
+
         public async Task<IReadOnlyList<CargoExternoDto>> BuscarCargosAsync(string nombre, int maxResultados, CancellationToken cancellationToken)
         {
             using var connection = connectionFactory.CreateConnection();
