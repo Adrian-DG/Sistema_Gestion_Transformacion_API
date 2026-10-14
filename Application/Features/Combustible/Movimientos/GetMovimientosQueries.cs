@@ -81,7 +81,7 @@ public class GetMovimientosQueryHandler(IUnitOfWork uow) :
                 Proveedor = m.Proveedor,
                 NumeroFactura = m.NumeroFactura,
                 Solicitante = m.SolicitantePersona != null ? m.SolicitantePersona.Apellido + " " + m.SolicitantePersona.Nombre : null,
-                DependenciaSolicitante = m.DependenciaSolicitante != null ? m.DependenciaSolicitante.Nombre : null,
+                DependenciaSolicitante = m.DependenciaSolicitante,
                 AsignacionId = m.AsignacionId,
                 Vehiculo = m.Asignacion != null
                     ? m.Asignacion.Vehiculo!.Placa + " | " + m.Asignacion.Vehiculo.Marca!.Nombre + " | " + m.Asignacion.Vehiculo.Modelo!.Nombre

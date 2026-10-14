@@ -17,7 +17,7 @@ namespace Infraestructure.Data.Seed
             [AppPermission.GestionAsignaciones] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000003"), "Solicitudes y asignaciones de vehículos"),
             [AppPermission.GestionPolizas] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000004"), "Pólizas de seguro"),
             [AppPermission.GestionCombustible] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000005"), "Tickets, compras y despachos de combustible"),
-            [AppPermission.GestionOrganizacion] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000006"), "Dependencias, cargos y personas"),
+            [AppPermission.GestionPersonas] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000006"), "Registro de solicitantes, beneficiarios y receptores"),
             [AppPermission.GestionUsuarios] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000007"), "Administración de usuarios y permisos"),
         };
 

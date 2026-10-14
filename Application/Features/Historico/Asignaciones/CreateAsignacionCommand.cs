@@ -8,6 +8,7 @@ using Domain.Entities.Historico;
 using Domain.Enums;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Historico.Asignaciones;
 
@@ -15,12 +16,21 @@ namespace Application.Features.Historico.Asignaciones;
 /// Registra la solicitud de un vehículo. Queda en estatus Pendiente hasta su aprobación;
 /// mientras tanto el vehículo sigue disponible.
 /// </summary>
+/// <remarks>
+/// Las personas (solicitante, asignado y chofer) se identifican por su registro en el sistema, que guarda
+/// la cédula y el rango; el cargo y la dependencia del solicitante se toman de SIPFFAA (código y nombre).
+/// </remarks>
 public record CreateAsignacionCommand(
-    TipoBeneficiario TipoAsignacion,
-    Guid? CargoId,
-    Guid? PersonaId,
     Guid SolicitantePersonaId,
-    Guid DependenciaSolicitanteId,
+    int? CodCargoSolicitante,
+    string CargoSolicitante,
+    int? CodDependenciaSolicitante,
+    string DependenciaSolicitante,
+    TipoBeneficiario TipoAsignacion,
+    Guid PersonaId,
+    int? CodCargo,
+    string? Cargo,
+    Guid ChoferPersonaId,
     Guid VehiculoId,
     string Proposito,
     string? Destino,
@@ -33,9 +43,27 @@ public class CreateAsignacionCommandValidator : AbstractValidator<CreateAsignaci
 {
     public CreateAsignacionCommandValidator()
     {
-        this.ValidarBeneficiario(x => x.TipoAsignacion, x => x.CargoId, x => x.PersonaId);
-        RuleFor(x => x.SolicitantePersonaId).NotEmpty();
-        RuleFor(x => x.DependenciaSolicitanteId).NotEmpty();
+        RuleFor(x => x.SolicitantePersonaId).NotEmpty().WithMessage("Debe indicar quién solicita el vehículo.");
+        RuleFor(x => x.CargoSolicitante).NotEmpty().MaximumLength(200)
+            .WithMessage("Debe indicar el cargo de quien solicita el vehículo.");
+        RuleFor(x => x.CodCargoSolicitante).GreaterThan(0).When(x => x.CodCargoSolicitante.HasValue);
+        this.ValidarDependencia(x => x.CodDependenciaSolicitante, x => x.DependenciaSolicitante);
+
+        RuleFor(x => x.TipoAsignacion).IsInEnum();
+        RuleFor(x => x.PersonaId).NotEmpty().WithMessage("Debe indicar a quién se asigna el vehículo.");
+        RuleFor(x => x.Cargo).MaximumLength(200);
+        When(x => x.TipoAsignacion == TipoBeneficiario.Cargo, () =>
+        {
+            RuleFor(x => x.CodCargo).NotNull().GreaterThan(0).WithMessage("Para una asignación al cargo debe indicar CodCargo.");
+            RuleFor(x => x.Cargo).NotEmpty().WithMessage("Para una asignación al cargo debe indicar el cargo.");
+        });
+        When(x => x.TipoAsignacion == TipoBeneficiario.Persona, () =>
+        {
+            RuleFor(x => x).Must(x => x.CodCargo is null && x.Cargo is null)
+                .WithMessage("Una asignación a título personal no lleva CodCargo ni Cargo.");
+        });
+
+        RuleFor(x => x.ChoferPersonaId).NotEmpty().WithMessage("Debe indicar el chofer asignado.");
         RuleFor(x => x.VehiculoId).NotEmpty();
         RuleFor(x => x.Proposito).NotEmpty().MaximumLength(500);
         RuleFor(x => x.Destino).MaximumLength(250);
@@ -54,11 +82,18 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 {
     public async Task<Result<Guid>> Handle(CreateAsignacionCommand request, CancellationToken cancellationToken)
     {
-        var beneficiario = await unitOfWork.ValidarBeneficiarioAsync(request.TipoAsignacion, request.CargoId, request.PersonaId, cancellationToken);
-        if (beneficiario.IsFailure) return Result.Failure<Guid>(beneficiario.Error);
+        // El asignado puede ser el mismo solicitante, y el chofer, cualquiera de los dos.
+        var ids = new[] { request.SolicitantePersonaId, request.PersonaId, request.ChoferPersonaId };
+        var rangos = await unitOfWork.Query<Persona>()
+            .Where(p => ids.Contains(p.Id) && p.Status)
+            .Select(p => new { p.Id, Rango = p.Rango != null ? p.Rango.Nombre : null })
+            .ToDictionaryAsync(p => p.Id, p => p.Rango, cancellationToken);
 
-        var solicitante = await unitOfWork.ValidarSolicitanteAsync(request.SolicitantePersonaId, request.DependenciaSolicitanteId, cancellationToken);
-        if (solicitante.IsFailure) return Result.Failure<Guid>(solicitante.Error);
+        var noEncontrada = ids.FirstOrDefault(id => !rangos.ContainsKey(id));
+        if (noEncontrada != Guid.Empty)
+        {
+            return Result.Failure<Guid>(PersonaErrors.NotFound(noEncontrada));
+        }
 
         var vehiculoResult = await unitOfWork.VehiculoRepository.GetById(request.VehiculoId, cancellationToken);
         if (vehiculoResult.IsFailure) return Result.Failure<Guid>(vehiculoResult.Error);
@@ -81,11 +116,18 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         {
             Id = Guid.NewGuid(),
             Estatus = EstatusSolicitud.Pendiente,
-            TipoAsignacion = request.TipoAsignacion,
-            CargoId = request.CargoId,
-            PersonaId = request.PersonaId,
             SolicitantePersonaId = request.SolicitantePersonaId,
-            DependenciaSolicitanteId = request.DependenciaSolicitanteId,
+            RangoSolicitante = rangos[request.SolicitantePersonaId],
+            CodCargoSolicitante = request.CodCargoSolicitante,
+            CargoSolicitante = request.CargoSolicitante.Trim(),
+            CodDependenciaSolicitante = request.CodDependenciaSolicitante,
+            DependenciaSolicitante = request.DependenciaSolicitante.Trim(),
+            TipoAsignacion = request.TipoAsignacion,
+            PersonaId = request.PersonaId,
+            CodCargo = request.CodCargo,
+            Cargo = request.Cargo?.Trim(),
+            ChoferPersonaId = request.ChoferPersonaId,
+            RangoChofer = rangos[request.ChoferPersonaId],
             VehiculoId = request.VehiculoId,
             Proposito = request.Proposito,
             Destino = request.Destino,

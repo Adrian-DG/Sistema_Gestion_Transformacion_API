@@ -25,5 +25,20 @@ namespace API.Controllers
             var result = await _mediator.Send(new BuscarCargosExternosQuery(nombre, maxResultados), cancellationToken);
             return HandleResult(result);
         }
+
+        /// <summary>Departamentos que solicitan asignaciones de vehículos o tickets de combustible.</summary>
+        [HttpGet("departamentos")]
+        public async Task<IActionResult> BuscarDepartamentos([FromQuery] string nombre, [FromQuery] int maxResultados = 20, CancellationToken cancellationToken = default)
+        {
+            var result = await _mediator.Send(new BuscarDepartamentosExternosQuery(nombre, maxResultados), cancellationToken);
+            return HandleResult(result);
+        }
+
+        [HttpGet("departamentos/{codDepartamento:int}")]
+        public async Task<IActionResult> GetDepartamento([FromRoute] int codDepartamento, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetDepartamentoExternoQuery(codDepartamento), cancellationToken);
+            return HandleResult(result);
+        }
     }
 }

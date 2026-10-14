@@ -6,7 +6,7 @@ using Domain.Entities.Historico;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Features.Organizacion.Personas;
+namespace Application.Features.Personas;
 
 public class PersonaViewModel
 {
@@ -49,7 +49,7 @@ public class GetPersonasQueryHandler(IUnitOfWork uow)
                 TipoPersona = p.TipoPersona.ToString(),
                 Rango = p.Rango != null ? p.Rango.Nombre : null,
                 Institucion = p.Institucion.HasValue ? p.Institucion.Value.ToString() : null,
-                Dependencia = p.Dependencia != null ? p.Dependencia.Nombre : null,
+                Dependencia = p.Dependencia,
                 Telefono = p.Telefono
             })
             .ToListAsync(cancellationToken);

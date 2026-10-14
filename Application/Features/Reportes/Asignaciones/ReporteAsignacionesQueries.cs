@@ -3,7 +3,6 @@ using Application.Contracts.Reportes;
 using Domain.Common;
 using Domain.Entities.Combustible;
 using Domain.Entities.Historico;
-using Domain.Entities.Organizacion;
 using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -61,10 +60,12 @@ public record AsignacionReporteRow(
     DateTime? FechaRetornoReal,
     EstatusSolicitud Estatus,
     TipoBeneficiario TipoAsignacion,
-    string? Beneficiario,
-    string? ResponsableAlSalir,
     string Solicitante,
+    string CargoSolicitante,
     string Dependencia,
+    string AsignadoA,
+    string? Cargo,
+    string Chofer,
     string Proposito,
     string? Destino,
     string Placa,
@@ -126,17 +127,18 @@ public class ReporteAsignacionesQueryHandler(IUnitOfWork uow, IExcelReportGenera
 
             new HojaReporte("Detalle", "Detalle de asignaciones",
                 ["Salida", "Retorno estimado", "Retorno real", "Días de uso", "Retorno tardío", "Estatus", "Tipo",
-                 "Asignado a", "Responsable al salir", "Solicitante", "Dependencia", "Placa", "Vehículo",
+                 "Solicitante", "Cargo solicitante", "Dependencia", "Asignado a", "Cargo asignado", "Chofer", "Placa", "Vehículo",
                  "Destino", "Propósito", "Galones despachados", "Motivo rechazo / cancelación"],
                 rows.Select(r => new object?[]
                 {
                     r.FechaSalida, r.FechaRetornoEstimada, r.FechaRetornoReal,
                     r.DiasDeUso is { } dias ? Math.Round(dias, 2) : null, r.RetornoTardio,
-                    r.Estatus.ToString(), r.TipoAsignacion.ToString(), r.Beneficiario, r.ResponsableAlSalir,
-                    r.Solicitante, r.Dependencia, r.Placa, r.Vehiculo, r.Destino, r.Proposito,
+                    r.Estatus.ToString(), r.TipoAsignacion.ToString(),
+                    r.Solicitante, r.CargoSolicitante, r.Dependencia, r.AsignadoA, r.Cargo, r.Chofer,
+                    r.Placa, r.Vehiculo, r.Destino, r.Proposito,
                     r.GalonesDespachados, r.MotivoRechazoCancelacion
                 }).ToList(),
-                [15])
+                [17])
         ]);
 
         return Result.Success(new ArchivoReporte(excel.Generar(libro), $"Asignaciones_{periodo.Sufijo}.xlsx"));
@@ -144,7 +146,6 @@ public class ReporteAsignacionesQueryHandler(IUnitOfWork uow, IExcelReportGenera
 
     private async Task<List<AsignacionReporteRow>> CargarAsync(PeriodoReporte periodo, CancellationToken cancellationToken)
     {
-        var titulares = uow.Query<CargoTitularHistorico>();
         var movimientos = uow.Query<MovimientoCombustible>();
 
         return await uow.Query<Asignacion>()
@@ -156,16 +157,14 @@ public class ReporteAsignacionesQueryHandler(IUnitOfWork uow, IExcelReportGenera
                 a.FechaRetornoReal,
                 a.Estatus,
                 a.TipoAsignacion,
-                a.Cargo != null ? a.Cargo.Nombre : a.Persona!.Apellido + " " + a.Persona.Nombre,
-                // Para asignaciones al cargo, quien era el titular el día de la salida.
-                a.Cargo != null
-                    ? titulares
-                        .Where(h => h.CargoId == a.CargoId && h.FechaDesde <= a.FechaSalida && (h.FechaHasta == null || h.FechaHasta > a.FechaSalida))
-                        .Select(h => h.Persona!.Apellido + " " + h.Persona.Nombre)
-                        .FirstOrDefault()
-                    : a.Persona!.Apellido + " " + a.Persona.Nombre,
-                a.SolicitantePersona!.Apellido + " " + a.SolicitantePersona.Nombre,
-                a.DependenciaSolicitante!.Nombre,
+                (a.RangoSolicitante != null ? a.RangoSolicitante + " " : "")
+                    + a.SolicitantePersona!.Apellido + " " + a.SolicitantePersona.Nombre + " (" + a.SolicitantePersona.Identificacion + ")",
+                a.CargoSolicitante,
+                a.DependenciaSolicitante,
+                a.Persona!.Apellido + " " + a.Persona.Nombre + " (" + a.Persona.Identificacion + ")",
+                a.Cargo,
+                (a.RangoChofer != null ? a.RangoChofer + " " : "")
+                    + a.ChoferPersona!.Apellido + " " + a.ChoferPersona.Nombre + " (" + a.ChoferPersona.Identificacion + ")",
                 a.Proposito,
                 a.Destino,
                 a.Vehiculo!.Placa,

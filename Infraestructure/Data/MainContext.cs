@@ -2,7 +2,6 @@
 using Domain.Entities.Configuracion;
 using Domain.Entities.Historico;
 using Domain.Entities.Misc;
-using Domain.Entities.Organizacion;
 using Domain.Entities.Recursos;
 using Infraestructure.Data.Seed;
 using Infraestructure.Identity.Models;
@@ -51,35 +50,24 @@ namespace Infraestructure.Data
             builder.Entity<TipoVehiculo>(e => e.ToTable("TipoVehiculos", "misc"));
             builder.Entity<TipoOperacion>(e => e.ToTable("TipoOperaciones", "misc"));
 
-            // Organization entities
-            builder.Entity<Dependencia>(e =>
-            {
-                e.ToTable("Dependencias", "organizacion");
-                e.HasIndex(d => d.Nombre).IsUnique();
-            });
-
-            builder.Entity<Cargo>(e =>
-            {
-                e.ToTable("Cargos", "organizacion");
-                e.HasOne(c => c.Dependencia).WithMany(d => d.Cargos).HasForeignKey(c => c.DependenciaId);
-                e.HasOne(c => c.Titular).WithMany().HasForeignKey(c => c.TitularId);
-                e.HasIndex(c => new { c.DependenciaId, c.Nombre }).IsUnique();
-            });
-
-            builder.Entity<CargoTitularHistorico>(e =>
-            {
-                e.ToTable("CargoTitulares", "organizacion");
-                e.HasOne(h => h.Cargo).WithMany(c => c.HistorialTitulares).HasForeignKey(h => h.CargoId);
-            });
-
             // Historical entities
             builder.Entity<Asignacion>(e =>
             {
+                // La persona asignada siempre existe; el cargo solo acompaña a las asignaciones al cargo (1).
                 e.ToTable("Asignaciones", "historico", t => t.HasCheckConstraint(
-                    "CK_Asignaciones_Beneficiario", BeneficiarioCheck("TipoAsignacion")));
+                    "CK_Asignaciones_Cargo",
+                    "([TipoAsignacion] = 1 AND [CodCargo] IS NOT NULL AND [Cargo] IS NOT NULL) OR " +
+                    "([TipoAsignacion] = 2 AND [CodCargo] IS NULL AND [Cargo] IS NULL)"));
                 e.HasOne(a => a.Persona).WithMany().HasForeignKey(a => a.PersonaId);
                 e.HasOne(a => a.SolicitantePersona).WithMany().HasForeignKey(a => a.SolicitantePersonaId);
+                e.HasOne(a => a.ChoferPersona).WithMany().HasForeignKey(a => a.ChoferPersonaId);
                 e.HasIndex(a => new { a.VehiculoId, a.Estatus });
+                e.HasIndex(a => new { a.ChoferPersonaId, a.Estatus });
+                e.Property(a => a.RangoSolicitante).HasMaxLength(100);
+                e.Property(a => a.CargoSolicitante).HasMaxLength(200);
+                e.Property(a => a.DependenciaSolicitante).HasMaxLength(200);
+                e.Property(a => a.Cargo).HasMaxLength(200);
+                e.Property(a => a.RangoChofer).HasMaxLength(100);
             });
 
             builder.Entity<Adjunto>(e =>
@@ -95,6 +83,9 @@ namespace Infraestructure.Data
                     "CK_SolicitudesTicket_Beneficiario", BeneficiarioCheck("TipoBeneficiario")));
                 e.HasOne(s => s.Persona).WithMany().HasForeignKey(s => s.PersonaId);
                 e.HasOne(s => s.SolicitantePersona).WithMany().HasForeignKey(s => s.SolicitantePersonaId);
+                e.Property(s => s.Cargo).HasMaxLength(200);
+                e.Property(s => s.CargoSolicitante).HasMaxLength(200);
+                e.Property(s => s.DependenciaSolicitante).HasMaxLength(200);
             });
 
             builder.Entity<TicketCombustible>(e =>
@@ -112,6 +103,7 @@ namespace Infraestructure.Data
                 e.HasOne(m => m.SolicitantePersona).WithMany().HasForeignKey(m => m.SolicitantePersonaId);
                 e.HasOne(m => m.ReceptorPersona).WithMany().HasForeignKey(m => m.ReceptorPersonaId);
                 e.HasIndex(m => new { m.TipoCombustible, m.Fecha });
+                e.Property(m => m.DependenciaSolicitante).HasMaxLength(200);
             });
 
             builder.Entity<Poliza>(e =>
@@ -124,6 +116,7 @@ namespace Infraestructure.Data
             {
                 e.ToTable("Personas", "historico");
                 e.HasIndex(p => p.Identificacion).IsUnique();
+                e.Property(p => p.Dependencia).HasMaxLength(200);
             });
 
             // Configuration entities
@@ -233,10 +226,6 @@ namespace Infraestructure.Data
 
         public DbSet<Vehiculo> Vehiculos { get; set; }
 
-        public DbSet<Dependencia> Dependencias { get; set; }
-        public DbSet<Cargo> Cargos { get; set; }
-        public DbSet<CargoTitularHistorico> CargoTitulares { get; set; }
-
         public DbSet<SolicitudTicket> SolicitudesTicket { get; set; }
         public DbSet<TicketCombustible> Tickets { get; set; }
         public DbSet<MovimientoCombustible> MovimientosCombustible { get; set; }
@@ -249,11 +238,11 @@ namespace Infraestructure.Data
         #endregion
 
         /// <summary>
-        /// Exige exactamente un beneficiario: CargoId cuando el tipo es Cargo (1), PersonaId cuando es Persona (2).
+        /// Exige exactamente un beneficiario de tickets: el cargo de SIPFFAA cuando el tipo es Cargo (1), PersonaId cuando es Persona (2).
         /// </summary>
         private static string BeneficiarioCheck(string tipoColumn) =>
-            $"([{tipoColumn}] = 1 AND [CargoId] IS NOT NULL AND [PersonaId] IS NULL) OR " +
-            $"([{tipoColumn}] = 2 AND [PersonaId] IS NOT NULL AND [CargoId] IS NULL)";
+            $"([{tipoColumn}] = 1 AND [CodCargo] IS NOT NULL AND [Cargo] IS NOT NULL AND [PersonaId] IS NULL) OR " +
+            $"([{tipoColumn}] = 2 AND [PersonaId] IS NOT NULL AND [CodCargo] IS NULL AND [Cargo] IS NULL)";
 
     }
 }

@@ -17,10 +17,14 @@ public record TicketRequest(string Numero, TipoCombustible TipoCombustible, deci
 
 public record CreateSolicitudTicketCommand(
     TipoBeneficiario TipoBeneficiario,
-    Guid? CargoId,
+    int? CodCargo,
+    string? Cargo,
     Guid? PersonaId,
     Guid SolicitantePersonaId,
-    Guid DependenciaSolicitanteId,
+    int? CodCargoSolicitante,
+    string CargoSolicitante,
+    int? CodDependenciaSolicitante,
+    string DependenciaSolicitante,
     string Proposito,
     List<TicketRequest> Tickets,
     List<AdjuntoRequest> Adjuntos
@@ -30,9 +34,12 @@ public class CreateSolicitudTicketCommandValidator : AbstractValidator<CreateSol
 {
     public CreateSolicitudTicketCommandValidator()
     {
-        this.ValidarBeneficiario(x => x.TipoBeneficiario, x => x.CargoId, x => x.PersonaId);
+        this.ValidarBeneficiario(x => x.TipoBeneficiario, x => x.CodCargo, x => x.Cargo, x => x.PersonaId);
         RuleFor(x => x.SolicitantePersonaId).NotEmpty();
-        RuleFor(x => x.DependenciaSolicitanteId).NotEmpty();
+        RuleFor(x => x.CargoSolicitante).NotEmpty().MaximumLength(200)
+            .WithMessage("Debe indicar el cargo de quien solicita los tickets.");
+        RuleFor(x => x.CodCargoSolicitante).GreaterThan(0).When(x => x.CodCargoSolicitante.HasValue);
+        this.ValidarDependencia(x => x.CodDependenciaSolicitante, x => x.DependenciaSolicitante);
         RuleFor(x => x.Proposito).NotEmpty().MaximumLength(500);
 
         RuleFor(x => x.Tickets).NotEmpty().WithMessage("Debe registrar al menos un ticket.");
@@ -58,10 +65,10 @@ public class CreateSolicitudTicketCommandHandler(IUnitOfWork uow) : IRequestHand
 {
     public async Task<Result<Guid>> Handle(CreateSolicitudTicketCommand request, CancellationToken cancellationToken)
     {
-        var beneficiario = await uow.ValidarBeneficiarioAsync(request.TipoBeneficiario, request.CargoId, request.PersonaId, cancellationToken);
+        var beneficiario = await uow.ValidarBeneficiarioAsync(request.TipoBeneficiario, request.PersonaId, cancellationToken);
         if (beneficiario.IsFailure) return Result.Failure<Guid>(beneficiario.Error);
 
-        var solicitante = await uow.ValidarSolicitanteAsync(request.SolicitantePersonaId, request.DependenciaSolicitanteId, cancellationToken);
+        var solicitante = await uow.ValidarPersonaAsync(request.SolicitantePersonaId, cancellationToken);
         if (solicitante.IsFailure) return Result.Failure<Guid>(solicitante.Error);
 
         var numeros = request.Tickets.Select(t => t.Numero.Trim()).ToList();
@@ -80,10 +87,14 @@ public class CreateSolicitudTicketCommandHandler(IUnitOfWork uow) : IRequestHand
             Id = Guid.NewGuid(),
             Estatus = EstatusSolicitud.Pendiente,
             TipoBeneficiario = request.TipoBeneficiario,
-            CargoId = request.CargoId,
+            CodCargo = request.CodCargo,
+            Cargo = request.Cargo?.Trim(),
             PersonaId = request.PersonaId,
             SolicitantePersonaId = request.SolicitantePersonaId,
-            DependenciaSolicitanteId = request.DependenciaSolicitanteId,
+            CodCargoSolicitante = request.CodCargoSolicitante,
+            CargoSolicitante = request.CargoSolicitante.Trim(),
+            CodDependenciaSolicitante = request.CodDependenciaSolicitante,
+            DependenciaSolicitante = request.DependenciaSolicitante.Trim(),
             Proposito = request.Proposito,
             Status = true,
             Tickets = request.Tickets.Select(t => new TicketCombustible

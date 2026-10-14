@@ -1,6 +1,5 @@
 using Domain.Abstraction;
 using Domain.Entities.Misc;
-using Domain.Entities.Organizacion;
 using Domain.Enums;
 
 namespace Domain.Entities.Historico
@@ -18,8 +17,9 @@ namespace Domain.Entities.Historico
 
         public InstitucionEnum? Institucion { get; set; }
 
-        public Guid? DependenciaId { get; set; }
-        public virtual Dependencia? Dependencia { get; set; }
+        /// <summary>CodDepartamento de SIPFFAA y su nombre al registrar la persona.</summary>
+        public int? CodDependencia { get; set; }
+        public string? Dependencia { get; set; }
 
         public string? Telefono { get; set; }
 

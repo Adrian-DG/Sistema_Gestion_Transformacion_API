@@ -11,14 +11,24 @@ public class AsignacionViewModel
     public Guid Id { get; set; }
     public string Estatus { get; set; } = string.Empty;
 
-    public string TipoAsignacion { get; set; } = string.Empty;
-    public Guid? CargoId { get; set; }
-    public string? Cargo { get; set; }
-    /// <summary>Persona asignada, o titular actual cuando la asignación es al cargo.</summary>
-    public string? Responsable { get; set; }
-
     public string Solicitante { get; set; } = string.Empty;
+    public string SolicitanteCedula { get; set; } = string.Empty;
+    public string? RangoSolicitante { get; set; }
+    public string CargoSolicitante { get; set; } = string.Empty;
     public string DependenciaSolicitante { get; set; } = string.Empty;
+
+    public string TipoAsignacion { get; set; } = string.Empty;
+    /// <summary>Persona a quien se asigna el vehículo (en asignaciones al cargo, quien lo recibe).</summary>
+    public string AsignadoA { get; set; } = string.Empty;
+    public string AsignadoACedula { get; set; } = string.Empty;
+    /// <summary>CodCargo de SIPFFAA, solo en asignaciones al cargo.</summary>
+    public int? CodCargo { get; set; }
+    public string? Cargo { get; set; }
+
+    public string Chofer { get; set; } = string.Empty;
+    public string ChoferCedula { get; set; } = string.Empty;
+    public string? RangoChofer { get; set; }
+
     public string Proposito { get; set; } = string.Empty;
     public string? Destino { get; set; }
 

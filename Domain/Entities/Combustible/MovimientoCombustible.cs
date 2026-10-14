@@ -1,6 +1,5 @@
 using Domain.Abstraction;
 using Domain.Entities.Historico;
-using Domain.Entities.Organizacion;
 using Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -30,8 +29,9 @@ namespace Domain.Entities.Combustible
         // Solicitante (despachos)
         public Guid? SolicitantePersonaId { get; set; }
         public virtual Persona? SolicitantePersona { get; set; }
-        public Guid? DependenciaSolicitanteId { get; set; }
-        public virtual Dependencia? DependenciaSolicitante { get; set; }
+        /// <summary>CodDepartamento de SIPFFAA; nulo si la dependencia no está en SIPFFAA.</summary>
+        public int? CodDependenciaSolicitante { get; set; }
+        public string? DependenciaSolicitante { get; set; }
 
         // Despacho a vehículo asignado
         public Guid? AsignacionId { get; set; }

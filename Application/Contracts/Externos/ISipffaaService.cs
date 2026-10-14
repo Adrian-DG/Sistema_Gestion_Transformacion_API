@@ -7,6 +7,12 @@ public interface ISipffaaService
 {
     Task<MiembroExternoDto?> GetMiembroByCedulaAsync(string cedula, CancellationToken cancellationToken);
     Task<IReadOnlyList<CargoExternoDto>> BuscarCargosAsync(string nombre, int maxResultados, CancellationToken cancellationToken);
+
+    /// <summary>Departamentos activos cuyo nombre o descripción contienen el texto indicado.</summary>
+    Task<IReadOnlyList<DepartamentoExternoDto>> BuscarDepartamentosAsync(string nombre, int maxResultados, CancellationToken cancellationToken);
+
+    /// <summary>Departamento por su código, activo o no (para mostrar registros históricos).</summary>
+    Task<DepartamentoExternoDto?> GetDepartamentoAsync(int codDepartamento, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -59,6 +65,26 @@ public class CargoExternoDto
     /// <summary>Total de miembros activos en el cargo; <see cref="Ocupantes"/> trae como máximo los primeros.</summary>
     public int CantidadOcupantes { get; set; }
     public List<OcupanteCargoExternoDto> Ocupantes { get; set; } = [];
+}
+
+/// <summary>
+/// Departamento de SIPFFAA (tabla DEPARTAMENTO): la dependencia que solicita una asignación de vehículo
+/// o tickets de combustible. Se guarda en el sistema como CodDependenciaSolicitante y su nombre.
+/// </summary>
+public class DepartamentoExternoDto
+{
+    public int CodDepartamento { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public int CodInstitucion { get; set; }
+    public string? CodigoDeRegistro { get; set; }
+
+    /// <summary>Departamento superior en la estructura orgánica, para distinguir nombres repetidos.</summary>
+    public int CodDptoPadre { get; set; }
+    public string? DepartamentoPadre { get; set; }
+
+    public bool EstaEnElRecintoMilitar { get; set; }
+    public bool Status { get; set; }
 }
 
 public class OcupanteCargoExternoDto

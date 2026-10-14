@@ -26,7 +26,8 @@ public record RegistrarDespachoCommand(
     string? DescripcionConjunto,
     int? CantidadUnidades,
     Guid? SolicitantePersonaId,
-    Guid? DependenciaSolicitanteId,
+    int? CodDependenciaSolicitante,
+    string? DependenciaSolicitante,
     Guid? ReceptorPersonaId,
     string? ReceptorNombre
 ) : IRequest<Result<Guid>>;
@@ -54,7 +55,7 @@ public class RegistrarDespachoCommandValidator : AbstractValidator<RegistrarDesp
             RuleFor(x => x.DescripcionConjunto).NotEmpty().MaximumLength(500);
             RuleFor(x => x.CantidadUnidades).NotNull().GreaterThan(0);
             RuleFor(x => x.SolicitantePersonaId).NotEmpty().WithMessage("Debe indicar quién solicita el combustible.");
-            RuleFor(x => x.DependenciaSolicitanteId).NotEmpty().WithMessage("Debe indicar la dependencia solicitante.");
+            this.ValidarDependencia(x => x.CodDependenciaSolicitante, x => x.DependenciaSolicitante);
         });
     }
 }
@@ -64,13 +65,14 @@ public class RegistrarDespachoCommandHandler(IUnitOfWork uow) : IRequestHandler<
     public async Task<Result<Guid>> Handle(RegistrarDespachoCommand request, CancellationToken cancellationToken)
     {
         var solicitantePersonaId = request.SolicitantePersonaId;
-        var dependenciaSolicitanteId = request.DependenciaSolicitanteId;
+        var codDependenciaSolicitante = request.CodDependenciaSolicitante;
+        var dependenciaSolicitante = request.DependenciaSolicitante?.Trim();
 
         if (request.Concepto == ConceptoMovimientoCombustible.DespachoVehiculoAsignado)
         {
             var asignacion = await uow.Query<Asignacion>()
                 .Where(a => a.Id == request.AsignacionId)
-                .Select(a => new { a.Estatus, a.SolicitantePersonaId, a.DependenciaSolicitanteId })
+                .Select(a => new { a.Estatus, a.SolicitantePersonaId, a.CodDependenciaSolicitante, a.DependenciaSolicitante })
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (asignacion is null)
@@ -85,11 +87,15 @@ public class RegistrarDespachoCommandHandler(IUnitOfWork uow) : IRequestHandler<
 
             // Si no se indica, el solicitante del combustible es el de la asignación.
             solicitantePersonaId ??= asignacion.SolicitantePersonaId;
-            dependenciaSolicitanteId ??= asignacion.DependenciaSolicitanteId;
+            if (string.IsNullOrWhiteSpace(dependenciaSolicitante))
+            {
+                codDependenciaSolicitante = asignacion.CodDependenciaSolicitante;
+                dependenciaSolicitante = asignacion.DependenciaSolicitante;
+            }
         }
         else
         {
-            var solicitante = await uow.ValidarSolicitanteAsync(solicitantePersonaId!.Value, dependenciaSolicitanteId!.Value, cancellationToken);
+            var solicitante = await uow.ValidarPersonaAsync(solicitantePersonaId!.Value, cancellationToken);
             if (solicitante.IsFailure) return Result.Failure<Guid>(solicitante.Error);
         }
 
@@ -117,7 +123,8 @@ public class RegistrarDespachoCommandHandler(IUnitOfWork uow) : IRequestHandler<
             DescripcionConjunto = request.Concepto == ConceptoMovimientoCombustible.DespachoConjunto ? request.DescripcionConjunto : null,
             CantidadUnidades = request.Concepto == ConceptoMovimientoCombustible.DespachoConjunto ? request.CantidadUnidades : null,
             SolicitantePersonaId = solicitantePersonaId,
-            DependenciaSolicitanteId = dependenciaSolicitanteId,
+            CodDependenciaSolicitante = codDependenciaSolicitante,
+            DependenciaSolicitante = dependenciaSolicitante,
             ReceptorPersonaId = request.ReceptorPersonaId,
             ReceptorNombre = request.ReceptorNombre,
             Status = true

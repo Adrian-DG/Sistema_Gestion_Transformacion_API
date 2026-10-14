@@ -1,6 +1,7 @@
 using API.Middleware;
 using Application;
 using Infraestructure;
+using Infraestructure.Identity.Seed;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 
@@ -77,5 +78,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+await app.Services.SeedAdministradorAsync();
 
 app.Run();

@@ -74,19 +74,17 @@ public static class ReporteCombustibleData
                 m.DescripcionConjunto,
                 m.CantidadUnidades,
                 AsignacionTipo = m.Asignacion != null ? (TipoBeneficiario?)m.Asignacion.TipoAsignacion : null,
-                AsignacionCargo = m.Asignacion != null && m.Asignacion.Cargo != null ? m.Asignacion.Cargo.Nombre : null,
+                AsignacionCargo = m.Asignacion != null ? m.Asignacion.Cargo : null,
                 AsignacionPersona = m.Asignacion != null && m.Asignacion.Persona != null
                     ? m.Asignacion.Persona.Apellido + " " + m.Asignacion.Persona.Nombre : null,
                 Placa = m.Asignacion != null ? m.Asignacion.Vehiculo!.Placa : null,
                 TicketTipo = m.TicketCombustible != null ? (TipoBeneficiario?)m.TicketCombustible.SolicitudTicket!.TipoBeneficiario : null,
-                TicketCargo = m.TicketCombustible != null && m.TicketCombustible.SolicitudTicket!.Cargo != null
-                    ? m.TicketCombustible.SolicitudTicket.Cargo.Nombre : null,
+                TicketCargo = m.TicketCombustible != null ? m.TicketCombustible.SolicitudTicket!.Cargo : null,
                 TicketPersona = m.TicketCombustible != null && m.TicketCombustible.SolicitudTicket!.Persona != null
                     ? m.TicketCombustible.SolicitudTicket.Persona.Apellido + " " + m.TicketCombustible.SolicitudTicket.Persona.Nombre : null,
                 TicketNumero = m.TicketCombustible != null ? m.TicketCombustible.Numero : null,
-                Dependencia = m.DependenciaSolicitante != null
-                    ? m.DependenciaSolicitante.Nombre
-                    : m.TicketCombustible != null ? m.TicketCombustible.SolicitudTicket!.DependenciaSolicitante!.Nombre : null,
+                Dependencia = m.DependenciaSolicitante
+                    ?? (m.TicketCombustible != null ? m.TicketCombustible.SolicitudTicket!.DependenciaSolicitante : null),
                 Receptor = m.ReceptorPersona != null
                     ? m.ReceptorPersona.Apellido + " " + m.ReceptorPersona.Nombre
                     : m.ReceptorNombre

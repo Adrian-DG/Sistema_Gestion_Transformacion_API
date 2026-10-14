@@ -1,7 +1,6 @@
 using Domain.Abstraction;
 using Domain.Common;
 using Domain.Common.Errors;
-using Domain.Entities.Organizacion;
 using Domain.Entities.Recursos;
 using Domain.Enums;
 using System.ComponentModel.DataAnnotations;
@@ -9,7 +8,8 @@ using System.ComponentModel.DataAnnotations;
 namespace Domain.Entities.Historico
 {
     /// <summary>
-    /// Solicitud y asignación de un vehículo a un cargo o a una persona autorizada.
+    /// Solicitud y asignación de un vehículo a una persona (a título personal o en nombre de un cargo),
+    /// con el chofer que lo conduce.
     /// Se crea en estatus Pendiente; al aprobarse reserva el vehículo para el período
     /// [FechaSalida, FechaRetornoEstimada] y se finaliza al registrar el retorno real.
     /// </summary>
@@ -23,18 +23,34 @@ namespace Domain.Entities.Historico
 
         public EstatusSolicitud Estatus { get; set; }
 
-        // A quién se asigna
-        public TipoBeneficiario TipoAsignacion { get; set; }
-        public Guid? CargoId { get; set; }
-        public virtual Cargo? Cargo { get; set; }
-        public Guid? PersonaId { get; set; }
-        public virtual Persona? Persona { get; set; }
+        // Los cargos, dependencias y rangos se guardan con el valor vigente al registrar la solicitud,
+        // para que el histórico no cambie si SIPFFAA o la persona se actualizan.
 
-        // Quién lo solicita y para qué
+        // Quién lo solicita y para qué (la cédula es la Identificacion de la persona)
         public Guid SolicitantePersonaId { get; set; }
         public virtual Persona? SolicitantePersona { get; set; }
-        public Guid DependenciaSolicitanteId { get; set; }
-        public virtual Dependencia? DependenciaSolicitante { get; set; }
+        public string? RangoSolicitante { get; set; }
+        /// <summary>CodCargo de SIPFFAA; nulo si el cargo no está en SIPFFAA.</summary>
+        public int? CodCargoSolicitante { get; set; }
+        public required string CargoSolicitante { get; set; }
+        /// <summary>CodDepartamento de SIPFFAA; nulo si la dependencia no está en SIPFFAA.</summary>
+        public int? CodDependenciaSolicitante { get; set; }
+        public required string DependenciaSolicitante { get; set; }
+
+        /// <summary>
+        /// Persona a quien se asigna el vehículo; puede ser el mismo solicitante. En asignaciones al cargo
+        /// (<see cref="TipoBeneficiario.Cargo"/>) es quien lo recibe en nombre del cargo indicado.
+        /// </summary>
+        public TipoBeneficiario TipoAsignacion { get; set; }
+        public Guid PersonaId { get; set; }
+        public virtual Persona? Persona { get; set; }
+        public int? CodCargo { get; set; }
+        public string? Cargo { get; set; }
+
+        // Chofer que conduce el vehículo
+        public Guid ChoferPersonaId { get; set; }
+        public virtual Persona? ChoferPersona { get; set; }
+        public string? RangoChofer { get; set; }
 
         [DataType(DataType.MultilineText)]
         public required string Proposito { get; set; }

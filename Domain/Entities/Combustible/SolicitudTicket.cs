@@ -2,7 +2,6 @@ using Domain.Abstraction;
 using Domain.Common;
 using Domain.Common.Errors;
 using Domain.Entities.Historico;
-using Domain.Entities.Organizacion;
 using Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
@@ -16,18 +15,25 @@ namespace Domain.Entities.Combustible
     {
         public EstatusSolicitud Estatus { get; set; }
 
-        // A quién se le entregan los tickets
+        // A quién se le entregan los tickets (cargo de SIPFFAA: código y nombre al registrar)
         public TipoBeneficiario TipoBeneficiario { get; set; }
-        public Guid? CargoId { get; set; }
-        public virtual Cargo? Cargo { get; set; }
+        public int? CodCargo { get; set; }
+        public string? Cargo { get; set; }
         public Guid? PersonaId { get; set; }
         public virtual Persona? Persona { get; set; }
 
-        // Quién lo solicita y para qué
+        // Quién lo solicita (su cédula es la Identificacion de la persona) y para qué
         public Guid SolicitantePersonaId { get; set; }
         public virtual Persona? SolicitantePersona { get; set; }
-        public Guid DependenciaSolicitanteId { get; set; }
-        public virtual Dependencia? DependenciaSolicitante { get; set; }
+        /// <summary>
+        /// Cargo del solicitante al momento de la solicitud: CodCargo de SIPFFAA (nulo si no está en
+        /// SIPFFAA) y su nombre.
+        /// </summary>
+        public int? CodCargoSolicitante { get; set; }
+        public required string CargoSolicitante { get; set; }
+        /// <summary>CodDepartamento de SIPFFAA; nulo si la dependencia no está en SIPFFAA.</summary>
+        public int? CodDependenciaSolicitante { get; set; }
+        public required string DependenciaSolicitante { get; set; }
 
         [DataType(DataType.MultilineText)]
         public required string Proposito { get; set; }

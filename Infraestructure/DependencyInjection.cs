@@ -49,7 +49,7 @@ namespace Infraestructure
             services
                 .AddIdentityCore<AppUser>(options =>
                 {
-                    options.User.RequireUniqueEmail = true;
+                    options.User.RequireUniqueEmail = false;
                 })
                 .AddRoles<AppRole>()
                 .AddErrorDescriber<SpanishIdentityErrorDescriber>()
@@ -84,8 +84,8 @@ namespace Infraestructure
                     p => p.RequireRole(AppPermission.GestionPolizas.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManageCombustible.ToString(),
                     p => p.RequireRole(AppPermission.GestionCombustible.ToString(), AppPermission.Administrador.ToString()));
-                options.AddPolicy(AppPolicy.CanManageOrganizacion.ToString(),
-                    p => p.RequireRole(AppPermission.GestionOrganizacion.ToString(), AppPermission.Administrador.ToString()));
+                options.AddPolicy(AppPolicy.CanManagePersonas.ToString(),
+                    p => p.RequireRole(AppPermission.GestionPersonas.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManageUsuarios.ToString(),
                     p => p.RequireRole(AppPermission.GestionUsuarios.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManageConfiguracion.ToString(),

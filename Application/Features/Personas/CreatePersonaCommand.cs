@@ -1,4 +1,3 @@
-using Application.Common.Validation;
 using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
@@ -8,7 +7,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Application.Features.Organizacion.Personas;
+namespace Application.Features.Personas;
 
 public record CreatePersonaCommand(
     string Identificacion,
@@ -18,7 +17,8 @@ public record CreatePersonaCommand(
     TipoPersona TipoPersona,
     Guid? RangoId,
     InstitucionEnum? Institucion,
-    Guid? DependenciaId,
+    int? CodDependencia,
+    string? Dependencia,
     string? Telefono
 ) : IRequest<Result<Guid>>;
 
@@ -32,6 +32,10 @@ public class CreatePersonaCommandValidator : AbstractValidator<CreatePersonaComm
         RuleFor(x => x.Sexo).IsInEnum();
         RuleFor(x => x.TipoPersona).IsInEnum();
         RuleFor(x => x.Telefono).MaximumLength(20);
+        RuleFor(x => x.Dependencia).MaximumLength(200);
+        RuleFor(x => x.CodDependencia).GreaterThan(0).When(x => x.CodDependencia.HasValue);
+        RuleFor(x => x.Dependencia).NotEmpty().When(x => x.CodDependencia.HasValue)
+            .WithMessage("Indique el nombre de la dependencia junto con su código.");
 
         When(x => x.TipoPersona == TipoPersona.Militar, () =>
         {
@@ -48,13 +52,7 @@ public class CreatePersonaCommandHandler(IUnitOfWork uow) : IRequestHandler<Crea
         var duplicada = await uow.Query<Persona>().AnyAsync(p => p.Identificacion == request.Identificacion, cancellationToken);
         if (duplicada)
         {
-            return Result.Failure<Guid>(OrganizacionErrors.PersonaDuplicada(request.Identificacion));
-        }
-
-        if (request.DependenciaId.HasValue)
-        {
-            var dependencia = await uow.ValidarDependenciaAsync(request.DependenciaId.Value, cancellationToken);
-            if (dependencia.IsFailure) return Result.Failure<Guid>(dependencia.Error);
+            return Result.Failure<Guid>(PersonaErrors.Duplicada(request.Identificacion));
         }
 
         var persona = new Persona
@@ -66,7 +64,8 @@ public class CreatePersonaCommandHandler(IUnitOfWork uow) : IRequestHandler<Crea
             TipoPersona = request.TipoPersona,
             RangoId = request.RangoId,
             Institucion = request.Institucion,
-            DependenciaId = request.DependenciaId,
+            CodDependencia = request.CodDependencia,
+            Dependencia = string.IsNullOrWhiteSpace(request.Dependencia) ? null : request.Dependencia.Trim(),
             Telefono = request.Telefono,
             Status = true
         };

@@ -26,6 +26,9 @@ namespace Infraestructure.Repositories.Historico
             {
                 query = query.Where(x =>
                     x.Proposito.Contains(filter.Param) ||
+                    x.SolicitantePersona!.Identificacion.Contains(filter.Param) ||
+                    x.Persona!.Identificacion.Contains(filter.Param) ||
+                    x.ChoferPersona!.Identificacion.Contains(filter.Param) ||
                     x.Vehiculo!.Placa.Contains(filter.Param) ||
                     x.Vehiculo.Matricula.Contains(filter.Param) ||
                     x.Vehiculo.Chasis.Contains(filter.Param));
@@ -41,16 +44,19 @@ namespace Infraestructure.Repositories.Historico
                 {
                     Id = x.Id,
                     Estatus = x.Estatus.ToString(),
-                    TipoAsignacion = x.TipoAsignacion.ToString(),
-                    CargoId = x.CargoId,
-                    Cargo = x.Cargo != null ? x.Cargo.Nombre : null,
-                    Responsable = x.Persona != null
-                        ? x.Persona.Apellido + " " + x.Persona.Nombre
-                        : x.Cargo != null && x.Cargo.Titular != null
-                            ? x.Cargo.Titular.Apellido + " " + x.Cargo.Titular.Nombre
-                            : null,
                     Solicitante = x.SolicitantePersona!.Apellido + " " + x.SolicitantePersona.Nombre,
-                    DependenciaSolicitante = x.DependenciaSolicitante!.Nombre,
+                    SolicitanteCedula = x.SolicitantePersona.Identificacion,
+                    RangoSolicitante = x.RangoSolicitante,
+                    CargoSolicitante = x.CargoSolicitante,
+                    DependenciaSolicitante = x.DependenciaSolicitante,
+                    TipoAsignacion = x.TipoAsignacion.ToString(),
+                    AsignadoA = x.Persona!.Apellido + " " + x.Persona.Nombre,
+                    AsignadoACedula = x.Persona.Identificacion,
+                    CodCargo = x.CodCargo,
+                    Cargo = x.Cargo,
+                    Chofer = x.ChoferPersona!.Apellido + " " + x.ChoferPersona.Nombre,
+                    ChoferCedula = x.ChoferPersona.Identificacion,
+                    RangoChofer = x.RangoChofer,
                     Proposito = x.Proposito,
                     Destino = x.Destino,
                     VehiculoId = x.VehiculoId,

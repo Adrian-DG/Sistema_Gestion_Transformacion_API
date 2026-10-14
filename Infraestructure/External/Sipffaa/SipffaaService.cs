@@ -51,6 +51,32 @@ namespace Infraestructure.External.Sipffaa
             return cargos;
         }
 
+        public async Task<IReadOnlyList<DepartamentoExternoDto>> BuscarDepartamentosAsync(string nombre, int maxResultados, CancellationToken cancellationToken)
+        {
+            using var connection = connectionFactory.CreateConnection();
+
+            var command = new CommandDefinition(
+                SipffaaQueries.DepartamentosPorNombre,
+                new { Patron = $"%{EscaparLike(nombre.Trim())}%", MaxResultados = maxResultados },
+                commandTimeout: CommandTimeoutSeconds,
+                cancellationToken: cancellationToken);
+
+            return (await connection.QueryAsync<DepartamentoExternoDto>(command)).AsList();
+        }
+
+        public async Task<DepartamentoExternoDto?> GetDepartamentoAsync(int codDepartamento, CancellationToken cancellationToken)
+        {
+            using var connection = connectionFactory.CreateConnection();
+
+            var command = new CommandDefinition(
+                SipffaaQueries.DepartamentoPorCodigo,
+                new { CodDepartamento = codDepartamento },
+                commandTimeout: CommandTimeoutSeconds,
+                cancellationToken: cancellationToken);
+
+            return await connection.QueryFirstOrDefaultAsync<DepartamentoExternoDto>(command);
+        }
+
         /// <summary>Acepta la cédula con o sin guiones (001-1234567-8 / 00112345678).</summary>
         private static string NormalizarCedula(string cedula) => cedula.Trim().Replace("-", string.Empty);
 

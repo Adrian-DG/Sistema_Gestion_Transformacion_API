@@ -2,7 +2,7 @@
 using Application.Features.Combustible.Movimientos;
 using Application.Features.Combustible.Tickets;
 using Application.Features.Historico.Asignaciones;
-using Application.Features.Organizacion.Personas;
+using Application.Features.Personas;
 using Application.Features.Historico.Polizas;
 using Application.Features.Vehiculo;
 using FluentValidation;

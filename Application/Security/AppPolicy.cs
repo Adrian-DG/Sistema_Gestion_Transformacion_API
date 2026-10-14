@@ -6,7 +6,7 @@ public enum AppPolicy
     CanManageAsignaciones,
     CanManagePolizas,
     CanManageCombustible,
-    CanManageOrganizacion,
+    CanManagePersonas,
     CanManageUsuarios,
     /// <summary>Personalización del frontend; solo Administrador.</summary>
     CanManageConfiguracion

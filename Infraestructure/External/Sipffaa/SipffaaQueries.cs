@@ -48,6 +48,41 @@ namespace Infraestructure.External.Sipffaa
             ORDER BY c.Nombre
             """;
 
+        /// <summary>Tabla de departamentos (entidad DEPARTAMENTO del sistema SIPFFAA).</summary>
+        private const string TablaDepartamentos = "dbo.DEPARTAMENTO";
+
+        /// <summary>
+        /// Columnas de <see cref="Application.Contracts.Externos.DepartamentoExternoDto"/> con el nombre del
+        /// departamento padre. La raíz de la estructura puede no tener padre (o apuntarse a sí misma).
+        /// </summary>
+        private const string ColumnasDepartamento = """
+            d.CodDepartamento, d.Nombre, d.Descripcion, d.CodInstitucion, d.CodigoDeRegistro,
+            d.CodDptoPadre, p.Nombre AS DepartamentoPadre,
+            d.EstaEnElRecintoMilitar, d.Status
+            """;
+
+        private const string FromDepartamentos = $"""
+            FROM {TablaDepartamentos} d
+            LEFT JOIN {TablaDepartamentos} p ON p.CodDepartamento = d.CodDptoPadre AND p.CodDepartamento <> d.CodDepartamento
+            """;
+
+        /// <remarks>Busca en el nombre, la descripción y NameToSearch de los departamentos activos.</remarks>
+        public const string DepartamentosPorNombre = $"""
+            SELECT TOP (@MaxResultados)
+                {ColumnasDepartamento}
+            {FromDepartamentos}
+            WHERE d.Status = 1
+              AND (d.Nombre LIKE @Patron OR d.Descripcion LIKE @Patron OR d.NameToSearch LIKE @Patron)
+            ORDER BY d.Nombre
+            """;
+
+        public const string DepartamentoPorCodigo = $"""
+            SELECT
+                {ColumnasDepartamento}
+            {FromDepartamentos}
+            WHERE d.CodDepartamento = @CodDepartamento
+            """;
+
         /// <remarks>
         /// Miembros activos de los cargos indicados, limitados por cargo porque un cargo
         /// no único (ej. Ayudante) puede tener muchos ocupantes.

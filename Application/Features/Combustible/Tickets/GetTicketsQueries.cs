@@ -30,6 +30,8 @@ public class SolicitudTicketViewModel
     public required string TipoBeneficiario { get; set; }
     public string? EntregadoA { get; set; }
     public required string Solicitante { get; set; }
+    public required string SolicitanteCedula { get; set; }
+    public required string CargoSolicitante { get; set; }
     public required string DependenciaSolicitante { get; set; }
     public required string Proposito { get; set; }
     public DateTime FechaSolicitud { get; set; }
@@ -62,7 +64,7 @@ public class GetTicketsQueryHandler(IUnitOfWork uow) :
                 FechaUso = t.FechaUso,
                 SolicitudTicketId = t.SolicitudTicketId,
                 EntregadoA = t.SolicitudTicket!.Cargo != null
-                    ? t.SolicitudTicket.Cargo.Nombre
+                    ? t.SolicitudTicket.Cargo
                     : t.SolicitudTicket.Persona!.Apellido + " " + t.SolicitudTicket.Persona.Nombre
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -95,10 +97,12 @@ public class GetTicketsQueryHandler(IUnitOfWork uow) :
                 Estatus = s.Estatus.ToString(),
                 TipoBeneficiario = s.TipoBeneficiario.ToString(),
                 EntregadoA = s.Cargo != null
-                    ? s.Cargo.Nombre
+                    ? s.Cargo
                     : s.Persona!.Apellido + " " + s.Persona.Nombre,
                 Solicitante = s.SolicitantePersona!.Apellido + " " + s.SolicitantePersona.Nombre,
-                DependenciaSolicitante = s.DependenciaSolicitante!.Nombre,
+                SolicitanteCedula = s.SolicitantePersona.Identificacion,
+                CargoSolicitante = s.CargoSolicitante,
+                DependenciaSolicitante = s.DependenciaSolicitante,
                 Proposito = s.Proposito,
                 FechaSolicitud = s.CreatedAt,
                 FechaAprobacion = s.FechaAprobacion,
