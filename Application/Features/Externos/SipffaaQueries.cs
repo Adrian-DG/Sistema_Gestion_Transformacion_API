@@ -1,3 +1,4 @@
+﻿using Application.Contracts;
 using Application.Contracts.Externos;
 using Domain.Common;
 using FluentValidation;
@@ -7,13 +8,19 @@ namespace Application.Features.Externos;
 
 public record GetMiembroByCedulaQuery(string Cedula) : IRequest<Result<MiembroExternoDto>>;
 
-/// <summary>Busca miembros activos por inicio de cédula o por nombre (autocompletado).</summary>
-public record BuscarMiembrosExternosQuery(string Texto, int MaxResultados = 20) : IRequest<Result<IReadOnlyList<MiembroExternoDto>>>;
+// Las búsquedas consultan primero los registros del sistema (BusquedaHistorico) y, si no encuentran
+// nada, SIPFFAA. Con SoloSipffaa se consulta SIPFFAA directamente (ej. "¿No está? Buscar en SIPFFAA").
 
-public record BuscarCargosExternosQuery(string Nombre, int MaxResultados = 20) : IRequest<Result<IReadOnlyList<CargoExternoDto>>>;
+/// <summary>Busca miembros por inicio de cédula o por nombre (autocompletado).</summary>
+public record BuscarMiembrosExternosQuery(string Texto, int MaxResultados = 20, bool SoloSipffaa = false)
+    : IRequest<Result<IReadOnlyList<MiembroExternoDto>>>;
+
+public record BuscarCargosExternosQuery(string Nombre, int MaxResultados = 20, bool SoloSipffaa = false)
+    : IRequest<Result<IReadOnlyList<CargoExternoDto>>>;
 
 /// <summary>Departamentos (dependencias) que solicitan asignaciones de vehículos o tickets de combustible.</summary>
-public record BuscarDepartamentosExternosQuery(string Nombre, int MaxResultados = 20) : IRequest<Result<IReadOnlyList<DepartamentoExternoDto>>>;
+public record BuscarDepartamentosExternosQuery(string Nombre, int MaxResultados = 20, bool SoloSipffaa = false)
+    : IRequest<Result<IReadOnlyList<DepartamentoExternoDto>>>;
 
 public record GetDepartamentoExternoQuery(int CodDepartamento) : IRequest<Result<DepartamentoExternoDto>>;
 
@@ -60,7 +67,7 @@ public class GetDepartamentoExternoQueryValidator : AbstractValidator<GetDeparta
     public GetDepartamentoExternoQueryValidator() => RuleFor(x => x.CodDepartamento).GreaterThan(0);
 }
 
-public class SipffaaQueryHandler(ISipffaaService sipffaa) :
+public class SipffaaQueryHandler(ISipffaaService sipffaa, IUnitOfWork uow) :
     IRequestHandler<GetMiembroByCedulaQuery, Result<MiembroExternoDto>>,
     IRequestHandler<BuscarMiembrosExternosQuery, Result<IReadOnlyList<MiembroExternoDto>>>,
     IRequestHandler<BuscarCargosExternosQuery, Result<IReadOnlyList<CargoExternoDto>>>,
@@ -79,18 +86,36 @@ public class SipffaaQueryHandler(ISipffaaService sipffaa) :
 
     public async Task<Result<IReadOnlyList<MiembroExternoDto>>> Handle(BuscarMiembrosExternosQuery request, CancellationToken cancellationToken)
     {
+        if (!request.SoloSipffaa)
+        {
+            var registrados = await uow.BuscarMiembrosHistoricoAsync(request.Texto, request.MaxResultados, cancellationToken);
+            if (registrados.Count > 0) return Result.Success(registrados);
+        }
+
         var miembros = await sipffaa.BuscarMiembrosAsync(request.Texto, request.MaxResultados, cancellationToken);
         return Result.Success(miembros);
     }
 
     public async Task<Result<IReadOnlyList<CargoExternoDto>>> Handle(BuscarCargosExternosQuery request, CancellationToken cancellationToken)
     {
+        if (!request.SoloSipffaa)
+        {
+            var registrados = await uow.BuscarCargosHistoricoAsync(request.Nombre, request.MaxResultados, cancellationToken);
+            if (registrados.Count > 0) return Result.Success(registrados);
+        }
+
         var cargos = await sipffaa.BuscarCargosAsync(request.Nombre, request.MaxResultados, cancellationToken);
         return Result.Success(cargos);
     }
 
     public async Task<Result<IReadOnlyList<DepartamentoExternoDto>>> Handle(BuscarDepartamentosExternosQuery request, CancellationToken cancellationToken)
     {
+        if (!request.SoloSipffaa)
+        {
+            var registrados = await uow.BuscarDepartamentosHistoricoAsync(request.Nombre, request.MaxResultados, cancellationToken);
+            if (registrados.Count > 0) return Result.Success(registrados);
+        }
+
         var departamentos = await sipffaa.BuscarDepartamentosAsync(request.Nombre, request.MaxResultados, cancellationToken);
         return Result.Success(departamentos);
     }

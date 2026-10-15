@@ -1,4 +1,4 @@
-namespace Application.Contracts.Externos;
+﻿namespace Application.Contracts.Externos;
 
 /// <summary>
 /// Consultas de solo lectura al sistema SIPFFAA (personal militar y cargos).
@@ -18,12 +18,22 @@ public interface ISipffaaService
     Task<DepartamentoExternoDto?> GetDepartamentoAsync(int codDepartamento, CancellationToken cancellationToken);
 }
 
+/// <summary>Dónde se encontró un resultado de búsqueda: en los registros del sistema o en SIPFFAA.</summary>
+public static class OrigenBusqueda
+{
+    public const string Historico = "Historico";
+    public const string Sipffaa = "Sipffaa";
+}
+
 /// <summary>
 /// Datos de un miembro necesarios para registrar solicitantes, beneficiarios y titulares.
 /// Se omiten intencionalmente los datos personales sensibles de la vista (sueldos, salud, rasgos físicos).
 /// </summary>
 public class MiembroExternoDto
 {
+    /// <summary><see cref="OrigenBusqueda"/>: Historico (ya registrado en el sistema) o Sipffaa.</summary>
+    public string Origen { get; set; } = OrigenBusqueda.Sipffaa;
+
     public int CodMiembro { get; set; }
     public string Cedula { get; set; } = string.Empty;
     public string PrimerNombre { get; set; } = string.Empty;
@@ -58,6 +68,9 @@ public class MiembroExternoDto
 /// <summary>Cargo de SIPFFAA (tabla CARGO) con los miembros activos que lo ocupan.</summary>
 public class CargoExternoDto
 {
+    /// <summary><see cref="OrigenBusqueda"/>: Historico (ya registrado en el sistema) o Sipffaa.</summary>
+    public string Origen { get; set; } = OrigenBusqueda.Sipffaa;
+
     public int CodCargo { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
@@ -76,6 +89,9 @@ public class CargoExternoDto
 /// </summary>
 public class DepartamentoExternoDto
 {
+    /// <summary><see cref="OrigenBusqueda"/>: Historico (ya registrado en el sistema) o Sipffaa.</summary>
+    public string Origen { get; set; } = OrigenBusqueda.Sipffaa;
+
     public int CodDepartamento { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string? Descripcion { get; set; }
