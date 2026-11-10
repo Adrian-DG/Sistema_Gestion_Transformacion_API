@@ -1,4 +1,4 @@
-using Application.Contracts;
+﻿using Application.Contracts;
 using Application.Contracts.Externos;
 using Domain.Common;
 using Domain.Entities.Historico;
@@ -7,6 +7,8 @@ using Domain.Enums;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Text;
 
 namespace Application.Features.Personas;
 
@@ -72,16 +74,35 @@ public class ImportarPersonaSipffaaCommandHandler(IUnitOfWork uow, ISipffaaServi
         return Result.Success(persona.Id);
     }
 
-    /// <summary>El rango de SIPFFAA se asocia al catálogo local por su nombre (o su denominación en la Armada).</summary>
+    /// <summary>
+    /// El rango de SIPFFAA se asocia al catálogo local por su nombre (o su denominación en la Armada), sin
+    /// distinguir mayúsculas ni tildes: SIPFFAA escribe "CAPITAN DE NAVIO" y el catálogo "Capitán de Navío".
+    /// </summary>
     private async Task<Guid?> RangoIdAsync(string? rango, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(rango)) return null;
-        var nombre = rango.Trim();
+        var nombre = Normalizar(rango);
 
-        return await uow.Query<Rango>()
-            .Where(r => r.Status && (r.Nombre == nombre || r.NombreArmada == nombre))
+        // El catálogo es pequeño: se compara en memoria.
+        var rangos = await uow.Query<Rango>()
+            .Where(r => r.Status)
+            .Select(r => new { r.Id, r.Nombre, r.NombreArmada })
+            .ToListAsync(cancellationToken);
+
+        return rangos
+            .Where(r => Normalizar(r.Nombre) == nombre || Normalizar(r.NombreArmada) == nombre)
             .Select(r => (Guid?)r.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+            .FirstOrDefault();
+    }
+
+    /// <summary>Sin tildes, en mayúsculas y con espacios simples.</summary>
+    private static string Normalizar(string? texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
+        var sinTildes = new string(texto.Normalize(NormalizationForm.FormD)
+            .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+            .ToArray());
+        return string.Join(' ', sinTildes.Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
     }
 
     private static string Unir(params string?[] partes) =>
