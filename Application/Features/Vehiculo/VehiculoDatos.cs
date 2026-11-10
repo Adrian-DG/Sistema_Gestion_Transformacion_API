@@ -14,7 +14,10 @@ public interface IDatosVehiculo
     string Matricula { get; }
     string Placa { get; }
     string? Ficha { get; }
-    int Kilometraje { get; }
+    /// <summary>Obligatorio: 0 si es nuevo o el que marque el odómetro.</summary>
+    int? Kilometraje { get; }
+    /// <summary>Obligatorio: si no tiene garantía se descartan sus datos.</summary>
+    bool? TieneGarantia { get; }
     DateOnly? GarantiaVence { get; }
     int? GarantiaKilometraje { get; }
     /// <summary>Taller autorizado (proveedor marcado como tal) donde se hacen los mantenimientos en garantía.</summary>
@@ -42,11 +45,16 @@ public class DatosVehiculoValidator<T> : AbstractValidator<T> where T : IDatosVe
             .NotEmpty().WithMessage("La placa es obligatoria.")
             .MaximumLength(10).WithMessage("La placa debe tener un máximo de 10 caracteres.");
 
-        RuleFor(x => x.Kilometraje).GreaterThanOrEqualTo(0).WithMessage("El kilometraje no puede ser negativo.");
-        RuleFor(x => x.GarantiaKilometraje).GreaterThan(0).WithMessage("El kilometraje límite de la garantía debe ser mayor que 0.");
-        RuleFor(x => x.GarantiaVence).NotNull()
-            .When(x => x.GarantiaKilometraje is not null || x.GarantiaTallerId is not null)
-            .WithMessage("Indique hasta cuándo es válida la garantía.");
+        RuleFor(x => x.Kilometraje)
+            .NotNull().WithMessage("Indique el kilometraje del vehículo (0 si es nuevo).")
+            .GreaterThanOrEqualTo(0).WithMessage("El kilometraje no puede ser negativo.");
+
+        RuleFor(x => x.TieneGarantia).NotNull().WithMessage("Indique si el vehículo tiene garantía.");
+        When(x => x.TieneGarantia == true, () =>
+        {
+            RuleFor(x => x.GarantiaVence).NotNull().WithMessage("Indique hasta cuándo es válida la garantía.");
+            RuleFor(x => x.GarantiaKilometraje).GreaterThan(0).WithMessage("El kilometraje límite de la garantía debe ser mayor que 0.");
+        });
 
         RuleFor(x => x.Ficha)
             .MaximumLength(20).WithMessage("La ficha debe tener un máximo de 20 caracteres.");
@@ -102,7 +110,7 @@ internal static class VehiculoReglas
             return Result.Failure(VehiculoErrors.CatalogoInvalido("El color indicado no existe."));
         }
 
-        if (datos.GarantiaTallerId is { } tallerId &&
+        if (datos.TieneGarantia == true && datos.GarantiaTallerId is { } tallerId &&
             !await uow.Query<Domain.Entities.Taller.Proveedor>().AnyAsync(p => p.Id == tallerId && p.Status && p.Tipo == Domain.Enums.TipoProveedor.Taller, cancellationToken))
         {
             return Result.Failure(VehiculoErrors.CatalogoInvalido("El taller de la garantía no existe o no está marcado como taller autorizado."));
@@ -137,10 +145,13 @@ internal static class VehiculoReglas
         vehiculo.Matricula = Normalizar(datos.Matricula);
         vehiculo.Placa = Normalizar(datos.Placa);
         vehiculo.Ficha = NormalizarOpcional(datos.Ficha);
-        vehiculo.Kilometraje = datos.Kilometraje;
-        vehiculo.GarantiaVence = datos.GarantiaVence;
-        vehiculo.GarantiaKilometraje = datos.GarantiaVence is null ? null : datos.GarantiaKilometraje;
-        vehiculo.GarantiaTallerId = datos.GarantiaVence is null ? null : datos.GarantiaTallerId;
+        vehiculo.Kilometraje = datos.Kilometraje!.Value;
+
+        // Sin garantía no se guarda ninguno de sus datos.
+        var conGarantia = datos.TieneGarantia == true;
+        vehiculo.GarantiaVence = conGarantia ? datos.GarantiaVence : null;
+        vehiculo.GarantiaKilometraje = conGarantia ? datos.GarantiaKilometraje : null;
+        vehiculo.GarantiaTallerId = conGarantia ? datos.GarantiaTallerId : null;
         vehiculo.Fabricacion = datos.Fabricacion;
         vehiculo.MarcaId = datos.MarcaId;
         vehiculo.ModeloId = datos.ModeloId;

@@ -1,7 +1,8 @@
-using Application.Common.DTO;
+﻿using Application.Common.DTO;
 using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
+using Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +26,11 @@ public class VehiculoDetalleViewModel
     public Guid ColorId { get; set; }
     public required string Color { get; set; }
     public string Estatus { get; set; } = string.Empty;
+    public CondicionVehiculo Condicion { get; set; }
+    /// <summary>Kilometraje con que ingresó a la flota.</summary>
+    public int KilometrajeIngreso { get; set; }
+    /// <summary>Fecha de ingreso (registro) a la flota.</summary>
+    public DateTime FechaIngreso { get; set; }
     public int Kilometraje { get; set; }
     public DateOnly? GarantiaVence { get; set; }
     public int? GarantiaKilometraje { get; set; }
@@ -32,6 +38,8 @@ public class VehiculoDetalleViewModel
     public string? GarantiaTaller { get; set; }
     /// <summary>Garantía vigente hoy (fecha y kilometraje).</summary>
     public bool EnGarantia { get; set; }
+    /// <summary>Fotos vigentes (una por vista); el archivo se descarga por su vista.</summary>
+    public List<FotoVehiculoViewModel> Fotos { get; set; } = [];
 }
 
 public class GetVehiculoQueryHandler(IUnitOfWork uow) : IRequestHandler<IDEntityFilterQuery<VehiculoDetalleViewModel>, Result<VehiculoDetalleViewModel>>
@@ -59,7 +67,15 @@ public class GetVehiculoQueryHandler(IUnitOfWork uow) : IRequestHandler<IDEntity
                 ColorId = v.ColorId,
                 Color = v.Color!.Nombre,
                 Estatus = EstatusVehiculos.Resolver(v.Estado, v.Asignaciones!.AsQueryable().Any(enMision)).ToString(),
+                Condicion = v.Condicion,
+                KilometrajeIngreso = v.KilometrajeIngreso,
+                FechaIngreso = v.CreatedAt,
                 Kilometraje = v.Kilometraje,
+                Fotos = v.Fotos
+                    .Where(f => f.Status)
+                    .OrderBy(f => f.Vista)
+                    .Select(f => new FotoVehiculoViewModel { Id = f.Id, Vista = f.Vista, NombreArchivo = f.NombreArchivo, Fecha = f.CreatedAt })
+                    .ToList(),
                 GarantiaVence = v.GarantiaVence,
                 GarantiaKilometraje = v.GarantiaKilometraje,
                 GarantiaTallerId = v.GarantiaTallerId,

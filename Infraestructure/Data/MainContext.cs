@@ -286,6 +286,15 @@ namespace Infraestructure.Data
                 e.Property(v => v.Ficha).HasMaxLength(20);
             });
 
+            builder.Entity<FotoVehiculo>(e =>
+            {
+                e.ToTable("FotosVehiculo", "recursos");
+                e.HasOne(f => f.Vehiculo).WithMany(v => v.Fotos).HasForeignKey(f => f.VehiculoId);
+                e.HasIndex(f => new { f.VehiculoId, f.Vista, f.Status });
+                e.Property(f => f.NombreArchivo).HasMaxLength(260);
+                e.Property(f => f.ContentType).HasMaxLength(100);
+            });
+
 
             // Los registros se desactivan (Status) en lugar de eliminarse; además varias entidades
             // referencian a Persona más de una vez, lo que SQL Server no admite con borrado en cascada.
@@ -333,6 +342,7 @@ namespace Infraestructure.Data
         public DbSet<TicketCombustible> Tickets { get; set; }
         public DbSet<MovimientoCombustible> MovimientosCombustible { get; set; }
 
+        public DbSet<FotoVehiculo> FotosVehiculo { get; set; }
         public DbSet<Proveedor> Proveedores { get; set; }
         public DbSet<Pieza> Piezas { get; set; }
         public DbSet<EntradaPieza> EntradasPieza { get; set; }

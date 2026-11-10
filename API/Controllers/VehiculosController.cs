@@ -1,9 +1,10 @@
-using API.Security;
+﻿using API.Security;
 using Application.Common.DTO;
 using Application.Features.Historico.Asignaciones;
 using Application.Features.Taller.Solicitudes;
 using Application.Features.Vehiculo;
 using Application.Security;
+using Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,13 +60,39 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        /// <summary>Fotos vigentes del vehículo (una por vista).</summary>
+        [HttpGet("{id:Guid}/fotos")]
+        public async Task<IActionResult> GetFotos([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetFotosVehiculoQuery(id), cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Imagen de una vista: Frente = 1, LadoIzquierdo = 2, LadoDerecho = 3, Trasera = 4.</summary>
+        [HttpGet("{id:Guid}/fotos/{vista}")]
+        public async Task<IActionResult> GetFoto([FromRoute] Guid id, [FromRoute] VistaVehiculo vista, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetFotoVehiculoQuery(id, vista), cancellationToken);
+            return result.IsSuccess
+                ? File(result.Value.Contenido, result.Value.ContentType, result.Value.NombreArchivo)
+                : HandleFailure(result);
+        }
+
+        /// <summary>Reemplaza la foto de una vista; la anterior queda en el historial.</summary>
+        [HttpPut("{id:Guid}/fotos")]
+        public async Task<IActionResult> ReemplazarFoto([FromRoute] Guid id, [FromBody] FotoVehiculoRequest foto, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new ReemplazarFotoVehiculoCommand(id, foto), cancellationToken);
+            return HandleResult(result);
+        }
+
         /// <summary>Actualiza los datos del vehículo; su estado lo cambia el taller.</summary>
         [HttpPut("{id:Guid}")]
         public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] DatosVehiculoRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdateVehiculoCommand(id, request.Chasis, request.Matricula, request.Placa, request.Fabricacion,
                 request.MarcaId, request.ModeloId, request.TipoId, request.ColorId, request.Ficha,
-                request.Kilometraje, request.GarantiaVence, request.GarantiaKilometraje, request.GarantiaTallerId);
+                request.Kilometraje, request.TieneGarantia, request.GarantiaVence, request.GarantiaKilometraje, request.GarantiaTallerId);
 
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
@@ -82,7 +109,8 @@ namespace API.Controllers
         Guid TipoId,
         Guid ColorId,
         string? Ficha = null,
-        int Kilometraje = 0,
+        int? Kilometraje = null,
+        bool? TieneGarantia = null,
         DateOnly? GarantiaVence = null,
         int? GarantiaKilometraje = null,
         Guid? GarantiaTallerId = null);

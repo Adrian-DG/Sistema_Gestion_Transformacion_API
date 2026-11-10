@@ -30,7 +30,13 @@ namespace Domain.Entities.Recursos
         /// <summary>Solo lo cambia el taller; el estatus visible se resuelve con EstatusVehiculos.</summary>
         public EstadoVehiculo Estado { get; set; } = EstadoVehiculo.Operativo;
 
-        /// <summary>Último kilometraje conocido: el de su registro o el del último ingreso al taller.</summary>
+        /// <summary>Condición al ingresar a la flota; no cambia después.</summary>
+        public CondicionVehiculo Condicion { get; set; }
+
+        /// <summary>Kilometraje con que ingresó a la flota (0 si es nuevo); no cambia después.</summary>
+        public int KilometrajeIngreso { get; set; }
+
+        /// <summary>Último kilometraje conocido: el de su registro o el del último ingreso al taller. Nunca baja.</summary>
         public int Kilometraje { get; set; }
 
         // Garantía del fabricante: vence por fecha o por kilometraje, lo que ocurra primero. Para
@@ -45,6 +51,9 @@ namespace Domain.Entities.Recursos
             GarantiaVence is { } vence && vence >= hoy && (GarantiaKilometraje is not { } limite || Kilometraje <= limite);
 
         public virtual ICollection<Asignacion>? Asignaciones { get; set; }
+
+        /// <summary>Fotografías por vista; las vigentes tienen Status en true.</summary>
+        public virtual ICollection<FotoVehiculo> Fotos { get; set; } = [];
 
         public DateTime CreatedAt { get; set; }
         public Guid CreatedBy { get; set; }

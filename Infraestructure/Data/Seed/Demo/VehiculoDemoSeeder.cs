@@ -1,4 +1,4 @@
-using Domain.Entities.Recursos;
+﻿using Domain.Entities.Recursos;
 using Domain.Enums;
 using static Infraestructure.Data.Seed.CatalogoVehiculoSeeder;
 
@@ -27,6 +27,8 @@ namespace Infraestructure.Data.Seed.Demo
             Vehiculo Vehiculo(Guid marcaId, Guid modeloId, Guid tipoId, Guid colorId, int fabricacion, EstadoVehiculo estado = EstadoVehiculo.Operativo)
             {
                 secuencia++;
+                // Uso aproximado de 15,000 km por año.
+                var kilometraje = Math.Max(demo.Ahora.Year - fabricacion, 0) * 15000 + secuencia * 731;
                 return demo.Registrar(new Vehiculo
                 {
                     Chasis = $"DEMO{fabricacion}{secuencia:D9}",
@@ -39,8 +41,9 @@ namespace Infraestructure.Data.Seed.Demo
                     TipoId = tipoId,
                     ColorId = colorId,
                     Estado = estado,
-                    // Uso aproximado de 15,000 km por año.
-                    Kilometraje = Math.Max(demo.Ahora.Year - fabricacion, 0) * 15000 + secuencia * 731
+                    Condicion = fabricacion >= demo.Ahora.Year ? CondicionVehiculo.Nuevo : CondicionVehiculo.Usado,
+                    KilometrajeIngreso = kilometraje,
+                    Kilometraje = kilometraje
                 });
             }
 

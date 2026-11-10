@@ -1,4 +1,4 @@
-namespace Domain.Common.Errors;
+﻿namespace Domain.Common.Errors;
 
 public static class VehiculoErrors
 {
@@ -21,6 +21,15 @@ public static class VehiculoErrors
     public static Error Duplicado(string campo, string descripcion, string valor) => Error.Conflict(
         $"Vehiculo.{campo}Duplicado",
         $"Ya existe un vehículo con {descripcion} '{valor}'.");
+
+    /// <summary>El kilometraje nunca baja: el taller y los mantenimientos dependen de él.</summary>
+    public static Error KilometrajeMenor(int actual) => Error.Validation(
+        "Vehiculo.KilometrajeMenor",
+        $"El kilometraje no puede ser menor que el último registrado ({actual:N0} km).");
+
+    public static Error FotoNotFound(Guid vehiculoId, Enums.VistaVehiculo vista) => Error.NotFound(
+        "Vehiculo.FotoNotFound",
+        $"El vehículo con id '{vehiculoId}' no tiene foto de la vista '{vista}'.");
 
     public static Error CatalogoInvalido(string mensaje) => Error.Validation(
         "Vehiculo.CatalogoInvalido",
