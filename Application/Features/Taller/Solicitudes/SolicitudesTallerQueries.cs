@@ -1,4 +1,4 @@
-using Application.Common.DTO;
+﻿using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Contracts;
 using Application.Contracts.Usuarios;
@@ -171,6 +171,7 @@ public class PiezaUtilizadaViewModel
 {
     public Guid PiezaId { get; set; }
     public string Codigo { get; set; } = string.Empty;
+    public TipoPieza Tipo { get; set; }
     public string Pieza { get; set; } = string.Empty;
     public string UnidadMedida { get; set; } = string.Empty;
     public decimal Cantidad { get; set; }
@@ -207,7 +208,7 @@ public class GetSolicitudTallerQueryHandler(IUnitOfWork uow)
             .Where(m => m.SolicitudTallerId == request.Id && m.Status)
             .OrderBy(m => m.Fecha).ThenBy(m => m.CreatedAt)
             .Select(m => new MovimientoOrden(
-                m.Id, m.Concepto, m.PiezaId, m.Pieza!.Codigo, m.Pieza.Nombre, m.Pieza.UnidadMedida,
+                m.Id, m.Concepto, m.PiezaId, m.Pieza!.Codigo, m.Pieza.Tipo, m.Pieza.Nombre, m.Pieza.UnidadMedida,
                 m.Cantidad, m.CostoUnitario, m.Fecha, m.Proveedor != null ? m.Proveedor.Nombre : null, m.NumeroFactura))
             .ToListAsync(cancellationToken);
 
@@ -247,13 +248,14 @@ public class GetSolicitudTallerQueryHandler(IUnitOfWork uow)
     }
 
     private record MovimientoOrden(
-        Guid Id, ConceptoMovimientoPieza Concepto, Guid PiezaId, string Codigo, string Pieza, string UnidadMedida,
+        Guid Id, ConceptoMovimientoPieza Concepto, Guid PiezaId, string Codigo, TipoPieza Tipo, string Pieza, string UnidadMedida,
         decimal Cantidad, decimal CostoUnitario, DateTime Fecha, string? Proveedor, string? NumeroFactura)
     {
         public PiezaUtilizadaViewModel ALinea() => new()
         {
             PiezaId = PiezaId,
             Codigo = Codigo,
+            Tipo = Tipo,
             Pieza = Pieza,
             UnidadMedida = UnidadMedida,
             Cantidad = Cantidad,
@@ -316,6 +318,7 @@ public class GetHistorialMantenimientosQueryHandler(IUnitOfWork uow, IUsuarioSer
                 {
                     PiezaId = m.PiezaId,
                     Codigo = m.Pieza!.Codigo,
+                    Tipo = m.Pieza.Tipo,
                     Pieza = m.Pieza.Nombre,
                     UnidadMedida = m.Pieza.UnidadMedida,
                     Cantidad = m.Cantidad,

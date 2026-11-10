@@ -1,4 +1,5 @@
-using Domain.Abstraction;
+﻿using Domain.Abstraction;
+using Domain.Enums;
 
 namespace Domain.Entities.Taller
 {
@@ -9,6 +10,7 @@ namespace Domain.Entities.Taller
     public class Pieza : NamedEntityMetadata, IAuditableEntityMetadata
     {
         public required string Codigo { get; set; }
+        public TipoPieza Tipo { get; set; } = TipoPieza.Otro;
         /// <summary>Código de barras del fabricante o del proveedor (opcional); único cuando se indica.</summary>
         public string? CodigoBarras { get; set; }
         public string? Descripcion { get; set; }

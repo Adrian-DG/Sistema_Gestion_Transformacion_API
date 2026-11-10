@@ -1,4 +1,4 @@
-using Application.Common.DTO;
+﻿using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Contracts;
 using Domain.Common;
@@ -15,6 +15,7 @@ public class PiezaViewModel
 {
     public Guid Id { get; set; }
     public required string Codigo { get; set; }
+    public TipoPieza Tipo { get; set; }
     public string? CodigoBarras { get; set; }
     public required string Nombre { get; set; }
     public string? Descripcion { get; set; }
@@ -61,6 +62,7 @@ public class GetPiezasQueryHandler(IUnitOfWork uow) : IRequestHandler<FiltroPiez
         {
             Id = p.Id,
             Codigo = p.Codigo,
+            Tipo = p.Tipo,
             CodigoBarras = p.CodigoBarras,
             Nombre = p.Nombre,
             Descripcion = p.Descripcion,
@@ -90,6 +92,7 @@ public class PiezaCatalogoViewModel
 {
     public Guid Id { get; set; }
     public required string Codigo { get; set; }
+    public TipoPieza Tipo { get; set; }
     /// <summary>Para ubicar la pieza al escanearla.</summary>
     public string? CodigoBarras { get; set; }
     public required string Nombre { get; set; }
@@ -113,6 +116,7 @@ public class GetPiezasCatalogoQueryHandler(IUnitOfWork uow)
             {
                 Id = p.Id,
                 Codigo = p.Codigo,
+                Tipo = p.Tipo,
                 CodigoBarras = p.CodigoBarras,
                 Nombre = p.Nombre,
                 UnidadMedida = p.UnidadMedida,
@@ -129,6 +133,7 @@ public class GetPiezasCatalogoQueryHandler(IUnitOfWork uow)
 public interface IDatosPieza
 {
     string Codigo { get; }
+    TipoPieza Tipo { get; }
     string Nombre { get; }
     string? Descripcion { get; }
     string UnidadMedida { get; }
@@ -137,11 +142,13 @@ public interface IDatosPieza
 }
 
 /// <summary>Registra una pieza sin existencia; entra al inventario con una entrada o una compra directa.</summary>
-public record CreatePiezaCommand(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, string? CodigoBarras = null)
+public record CreatePiezaCommand(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, string? CodigoBarras = null,
+    TipoPieza Tipo = TipoPieza.Otro)
     : IRequest<Result<Guid>>, IDatosPieza;
 
 /// <summary>Actualiza la pieza; <paramref name="Activo"/> en false la desactiva (conserva su kardex).</summary>
-public record UpdatePiezaCommand(Guid Id, string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null)
+public record UpdatePiezaCommand(Guid Id, string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null,
+    TipoPieza Tipo = TipoPieza.Otro)
     : IRequest<Result>, IDatosPieza;
 
 public class DatosPiezaValidator<T> : AbstractValidator<T> where T : IDatosPieza
@@ -149,6 +156,7 @@ public class DatosPiezaValidator<T> : AbstractValidator<T> where T : IDatosPieza
     public DatosPiezaValidator()
     {
         RuleFor(x => x.Codigo).NotEmpty().MaximumLength(30);
+        RuleFor(x => x.Tipo).IsInEnum().WithMessage("Indique un tipo de pieza válido.");
         RuleFor(x => x.Nombre).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Descripcion).MaximumLength(500);
         RuleFor(x => x.UnidadMedida).NotEmpty().MaximumLength(30);
@@ -230,6 +238,7 @@ public class PiezaCommandsHandler(IUnitOfWork uow) :
     private static void Aplicar(Pieza pieza, IDatosPieza datos, string codigo)
     {
         pieza.Codigo = codigo;
+        pieza.Tipo = datos.Tipo;
         pieza.CodigoBarras = NormalizarCodigoBarras(datos.CodigoBarras);
         pieza.Nombre = datos.Nombre.Trim();
         pieza.Descripcion = string.IsNullOrWhiteSpace(datos.Descripcion) ? null : datos.Descripcion.Trim();
@@ -311,6 +320,7 @@ public class GetPiezaQueryHandler(IUnitOfWork uow) : IRequestHandler<GetPiezaQue
             {
                 Id = p.Id,
                 Codigo = p.Codigo,
+                Tipo = p.Tipo,
                 CodigoBarras = p.CodigoBarras,
                 Nombre = p.Nombre,
                 Descripcion = p.Descripcion,

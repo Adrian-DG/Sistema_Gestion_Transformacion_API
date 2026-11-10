@@ -58,7 +58,7 @@ namespace API.Controllers
         public async Task<IActionResult> UpdatePieza([FromRoute] Guid id, [FromBody] DatosPiezaRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdatePiezaCommand(id, request.Codigo, request.Nombre, request.Descripcion,
-                request.UnidadMedida, request.ExistenciaMinima, request.Activo, request.CodigoBarras);
+                request.UnidadMedida, request.ExistenciaMinima, request.Activo, request.CodigoBarras, request.Tipo);
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
         }
@@ -140,7 +140,8 @@ namespace API.Controllers
         }
     }
 
-    public record DatosPiezaRequest(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null);
+    public record DatosPiezaRequest(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null,
+        TipoPieza Tipo = TipoPieza.Otro);
 
     public record DatosProveedorRequest(string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo,
         TipoProveedor Tipo = TipoProveedor.Otro);

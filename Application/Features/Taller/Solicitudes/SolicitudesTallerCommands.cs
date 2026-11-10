@@ -112,6 +112,8 @@ public class AgregarPiezaSolicitudTallerCommandValidator : AbstractValidator<Agr
 /// <summary>
 /// Cierra la orden con el diagnóstico y el trabajo realizado. Si el mecánico dictamina la baja
 /// (<paramref name="ProcedeBaja"/>), el vehículo pasa a inactivo; si no, vuelve a operativo.
+/// En el taller interno <paramref name="MecanicoId"/> es el mecánico que hizo el trabajo: si se omite
+/// queda el asignado al ingreso; si se indica otro, lo reemplaza.
 /// </summary>
 /// <remarks>
 /// En una solicitud externa se registra lo que cobró el taller autorizado (<paramref name="CostoServicio"/>,
@@ -124,15 +126,18 @@ public record FinalizarSolicitudTallerCommand(
     bool ProcedeBaja,
     decimal? CostoServicio = null,
     string? NumeroFacturaServicio = null,
-    List<AdjuntoRequest>? Adjuntos = null
+    List<AdjuntoRequest>? Adjuntos = null,
+    Guid? MecanicoId = null
 ) : IRequest<Result>;
 
 public class FinalizarSolicitudTallerCommandValidator : AbstractValidator<FinalizarSolicitudTallerCommand>
 {
     public FinalizarSolicitudTallerCommandValidator()
     {
-        RuleFor(x => x.Diagnostico).NotEmpty().MaximumLength(2000);
-        RuleFor(x => x.TrabajoRealizado).NotEmpty().MaximumLength(2000);
+        RuleFor(x => x.Diagnostico).NotEmpty().MaximumLength(2000)
+            .WithMessage("Indique el diagnóstico: qué se encontró en el vehículo.");
+        RuleFor(x => x.TrabajoRealizado).NotEmpty().MaximumLength(2000)
+            .WithMessage("Indique el trabajo realizado: qué se hizo y qué se cambió.");
         RuleFor(x => x.CostoServicio).GreaterThanOrEqualTo(0).PrecisionScale(14, 2, true);
         RuleFor(x => x.NumeroFacturaServicio).MaximumLength(50);
         RuleForEach(x => x.Adjuntos).SetValidator(new AdjuntoRequestValidator());
@@ -400,6 +405,15 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
         }
         else
         {
+            // Interno: queda registrado el mecánico que hizo el trabajo.
+            var mecanicoId = request.MecanicoId ?? solicitud.MecanicoId;
+            if (mecanicoId is not { } id || id == Guid.Empty) return Result.Failure(TallerErrors.MecanicoRequerido());
+            if (id != solicitud.MecanicoId && !await uow.Query<Mecanico>().AnyAsync(m => m.Id == id && m.Status, cancellationToken))
+            {
+                return Result.Failure(MecanicoErrors.NotFound(id));
+            }
+            solicitud.MecanicoId = id;
+
             resultado = solicitud.Finalizar(request.Diagnostico.Trim(), request.TrabajoRealizado.Trim(), request.ProcedeBaja, DateTime.Now);
         }
         if (resultado.IsFailure) return resultado;

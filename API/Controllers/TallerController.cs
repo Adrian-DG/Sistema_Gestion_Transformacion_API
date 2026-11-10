@@ -1,4 +1,4 @@
-using API.Security;
+﻿using API.Security;
 using Application.Common.DTO;
 using Application.Features.Taller;
 using Application.Features.Taller.Solicitudes;
@@ -75,7 +75,7 @@ namespace API.Controllers
         public async Task<IActionResult> Finalizar([FromRoute] Guid id, [FromBody] FinalizarRequest request, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new FinalizarSolicitudTallerCommand(id, request.Diagnostico, request.TrabajoRealizado,
-                request.ProcedeBaja, request.CostoServicio, request.NumeroFacturaServicio, request.Adjuntos), cancellationToken);
+                request.ProcedeBaja, request.CostoServicio, request.NumeroFacturaServicio, request.Adjuntos, request.MecanicoId), cancellationToken);
             return HandleResult(result);
         }
 
@@ -186,7 +186,8 @@ namespace API.Controllers
         bool ProcedeBaja,
         decimal? CostoServicio = null,
         string? NumeroFacturaServicio = null,
-        List<AdjuntoRequest>? Adjuntos = null);
+        List<AdjuntoRequest>? Adjuntos = null,
+        Guid? MecanicoId = null);
 
     public record DatosMecanicoRequest(string? Especialidad, string? Telefono, bool Activo);
 }
