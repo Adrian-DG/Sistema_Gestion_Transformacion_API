@@ -33,7 +33,7 @@ namespace API.Controllers
         [HttpGet("proveedores")]
         public async Task<IActionResult> GetProveedores(CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetProveedoresCatalogoQuery(SoloCombustible: true), cancellationToken);
+            var result = await _mediator.Send(new GetProveedoresCatalogoQuery(Domain.Enums.TipoProveedor.SuplidorCombustible), cancellationToken);
             return HandleResult(result);
         }
 

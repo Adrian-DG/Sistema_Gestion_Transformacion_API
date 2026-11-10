@@ -8,7 +8,7 @@ public static class CombustibleErrors
 
     public static Error NoEsSuplidorCombustible(string proveedor) => Error.Validation(
         "Combustible.NoEsSuplidorCombustible",
-        $"El proveedor '{proveedor}' no está registrado como suplidor de combustible.");
+        $"El proveedor '{proveedor}' no es de tipo suplidor de combustible.");
 
     public static Error AsignacionNoAprobada(Guid asignacionId) => Error.Conflict(
         "Combustible.AsignacionNoAprobada",

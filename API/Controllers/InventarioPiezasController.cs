@@ -1,6 +1,7 @@
 ﻿using API.Security;
 using Application.Features.Taller.Inventario;
 using Application.Security;
+using Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -82,14 +83,14 @@ namespace API.Controllers
         }
 
         /// <summary>
-        /// Proveedores activos, para listas de selección. <c>soloTalleres=true</c> deja los talleres autorizados
-        /// (también lo consulta Vehículos para la garantía).
+        /// Proveedores activos, para listas de selección. Con <c>tipo</c> (Taller = 1, SuplidorCombustible = 2,
+        /// Otro = 0) deja solo los de ese tipo; Vehículos consulta los talleres para la garantía.
         /// </summary>
         [HttpGet("proveedores/catalogo")]
         [AppAuthorize(AppPermission.GestionInventarioPiezas, AppPermission.GestionTaller, AppPermission.GestionVehiculos, AppPermission.Administrador)]
-        public async Task<IActionResult> GetProveedoresCatalogo([FromQuery] bool soloTalleres, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetProveedoresCatalogo([FromQuery] TipoProveedor? tipo, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetProveedoresCatalogoQuery(soloTalleres), cancellationToken);
+            var result = await _mediator.Send(new GetProveedoresCatalogoQuery(tipo), cancellationToken);
             return HandleResult(result);
         }
 
@@ -115,7 +116,7 @@ namespace API.Controllers
         public async Task<IActionResult> UpdateProveedor([FromRoute] Guid id, [FromBody] DatosProveedorRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdateProveedorCommand(id, request.Nombre, request.Rnc, request.Telefono, request.Correo,
-                request.Direccion, request.Contacto, request.Activo, request.EsTallerAutorizado, request.EsSuplidorCombustible);
+                request.Direccion, request.Contacto, request.Activo, request.Tipo);
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
         }
@@ -142,5 +143,5 @@ namespace API.Controllers
     public record DatosPiezaRequest(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null);
 
     public record DatosProveedorRequest(string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo,
-        bool EsTallerAutorizado = false, bool EsSuplidorCombustible = false);
+        TipoProveedor Tipo = TipoProveedor.Otro);
 }

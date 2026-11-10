@@ -1,10 +1,11 @@
 ﻿using Domain.Abstraction;
+using Domain.Enums;
 
 namespace Domain.Entities.Taller
 {
     /// <summary>
-    /// Suplidor de piezas, de combustible o taller autorizado (o varios). No se elimina: Status en
-    /// false lo desactiva.
+    /// Proveedor según su <see cref="TipoProveedor"/>: taller autorizado, suplidor de combustible u otro
+    /// (piezas, servicios). No se elimina: Status en false lo desactiva.
     /// </summary>
     public class Proveedor : NamedEntityMetadata, IAuditableEntityMetadata
     {
@@ -14,10 +15,7 @@ namespace Domain.Entities.Taller
         public string? Direccion { get; set; }
         /// <summary>Persona de contacto en el proveedor.</summary>
         public string? Contacto { get; set; }
-        /// <summary>Taller autorizado (ej. concesionario) donde se pueden hacer mantenimientos externos.</summary>
-        public bool EsTallerAutorizado { get; set; }
-        /// <summary>Suple combustible: solo estos aparecen al registrar una entrada de combustible.</summary>
-        public bool EsSuplidorCombustible { get; set; }
+        public TipoProveedor Tipo { get; set; } = TipoProveedor.Otro;
 
         public DateTime CreatedAt { get; set; }
         public Guid CreatedBy { get; set; }

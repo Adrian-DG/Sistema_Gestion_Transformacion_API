@@ -1,4 +1,4 @@
-using Domain.Entities.Configuracion;
+﻿using Domain.Entities.Configuracion;
 using Domain.Entities.Historico;
 using Domain.Entities.Taller;
 using Domain.Enums;
@@ -23,7 +23,7 @@ namespace Infraestructure.Data.Seed.Demo
                 Rnc = "999000003",
                 Telefono = "809-555-0103",
                 Contacto = "Taller de servicio",
-                EsTallerAutorizado = true
+                Tipo = TipoProveedor.Taller
             });
 
             // El vehículo más nuevo está en garantía: sus mantenimientos se hacen en el concesionario.

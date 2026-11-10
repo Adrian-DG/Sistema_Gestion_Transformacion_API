@@ -1,4 +1,4 @@
-using Application.Contracts;
+﻿using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
 using Domain.Entities.Misc;
@@ -103,7 +103,7 @@ internal static class VehiculoReglas
         }
 
         if (datos.GarantiaTallerId is { } tallerId &&
-            !await uow.Query<Domain.Entities.Taller.Proveedor>().AnyAsync(p => p.Id == tallerId && p.Status && p.EsTallerAutorizado, cancellationToken))
+            !await uow.Query<Domain.Entities.Taller.Proveedor>().AnyAsync(p => p.Id == tallerId && p.Status && p.Tipo == Domain.Enums.TipoProveedor.Taller, cancellationToken))
         {
             return Result.Failure(VehiculoErrors.CatalogoInvalido("El taller de la garantía no existe o no está marcado como taller autorizado."));
         }

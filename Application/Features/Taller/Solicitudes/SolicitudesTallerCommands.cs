@@ -1,4 +1,4 @@
-using Application.Common.DTO;
+﻿using Application.Common.DTO;
 using Application.Common.Validation;
 using Application.Contracts;
 using Application.Features.Taller.Inventario;
@@ -181,7 +181,7 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
         }
 
         if (request.TallerExternoId is { } tallerId &&
-            !await uow.Query<Proveedor>().AnyAsync(p => p.Id == tallerId && p.Status && p.EsTallerAutorizado, cancellationToken))
+            !await uow.Query<Proveedor>().AnyAsync(p => p.Id == tallerId && p.Status && p.Tipo == TipoProveedor.Taller, cancellationToken))
         {
             return Result.Failure<SolicitudTallerCreadaViewModel>(TallerErrors.TallerExternoInvalido(tallerId));
         }

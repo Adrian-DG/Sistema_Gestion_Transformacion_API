@@ -5,6 +5,7 @@ using Application.Features.Misc.ViewModels;
 using Domain.Common;
 using Domain.Common.Errors;
 using Domain.Entities.Taller;
+using Domain.Enums;
 using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,8 +21,7 @@ public class ProveedorViewModel
     public string? Correo { get; set; }
     public string? Direccion { get; set; }
     public string? Contacto { get; set; }
-    public bool EsTallerAutorizado { get; set; }
-    public bool EsSuplidorCombustible { get; set; }
+    public TipoProveedor Tipo { get; set; }
     public bool Activo { get; set; }
 }
 
@@ -68,8 +68,7 @@ public class GetProveedoresQueryHandler(IUnitOfWork uow)
                 Correo = p.Correo,
                 Direccion = p.Direccion,
                 Contacto = p.Contacto,
-                EsTallerAutorizado = p.EsTallerAutorizado,
-                EsSuplidorCombustible = p.EsSuplidorCombustible,
+                Tipo = p.Tipo,
                 Activo = p.Status
             })
             .ToListAsync(cancellationToken);
@@ -78,11 +77,8 @@ public class GetProveedoresQueryHandler(IUnitOfWork uow)
     }
 }
 
-/// <summary>
-/// Proveedores activos para listas de selección; <paramref name="SoloTalleres"/> deja los talleres
-/// autorizados y <paramref name="SoloCombustible"/> los suplidores de combustible.
-/// </summary>
-public record GetProveedoresCatalogoQuery(bool SoloTalleres = false, bool SoloCombustible = false)
+/// <summary>Proveedores activos para listas de selección; con <paramref name="Tipo"/>, solo los de ese tipo.</summary>
+public record GetProveedoresCatalogoQuery(TipoProveedor? Tipo = null)
     : IRequest<Result<IReadOnlyList<CatalogItemViewModel>>>;
 
 public class GetProveedoresCatalogoQueryHandler(IUnitOfWork uow)
@@ -92,8 +88,7 @@ public class GetProveedoresCatalogoQueryHandler(IUnitOfWork uow)
     {
         var proveedores = await uow.Query<Proveedor>()
             .Where(p => p.Status)
-            .Where(p => !request.SoloTalleres || p.EsTallerAutorizado)
-            .Where(p => !request.SoloCombustible || p.EsSuplidorCombustible)
+            .Where(p => request.Tipo == null || p.Tipo == request.Tipo)
             .OrderBy(p => p.Nombre)
             .Select(p => new CatalogItemViewModel { Id = p.Id, Nombre = p.Nombre })
             .ToListAsync(cancellationToken);
@@ -110,19 +105,18 @@ public interface IDatosProveedor
     string? Correo { get; }
     string? Direccion { get; }
     string? Contacto { get; }
-    bool EsTallerAutorizado { get; }
-    bool EsSuplidorCombustible { get; }
+    TipoProveedor Tipo { get; }
 }
 
 public record CreateProveedorCommand(
     string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto,
-    bool EsTallerAutorizado = false, bool EsSuplidorCombustible = false
+    TipoProveedor Tipo = TipoProveedor.Otro
 ) : IRequest<Result<Guid>>, IDatosProveedor;
 
 /// <summary>Actualiza el proveedor; <paramref name="Activo"/> en false lo desactiva (no se elimina).</summary>
 public record UpdateProveedorCommand(
     Guid Id, string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo,
-    bool EsTallerAutorizado = false, bool EsSuplidorCombustible = false
+    TipoProveedor Tipo = TipoProveedor.Otro
 ) : IRequest<Result>, IDatosProveedor;
 
 public class DatosProveedorValidator<T> : AbstractValidator<T> where T : IDatosProveedor
@@ -135,6 +129,7 @@ public class DatosProveedorValidator<T> : AbstractValidator<T> where T : IDatosP
         RuleFor(x => x.Correo).MaximumLength(150).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Correo));
         RuleFor(x => x.Direccion).MaximumLength(300);
         RuleFor(x => x.Contacto).MaximumLength(150);
+        RuleFor(x => x.Tipo).IsInEnum();
     }
 }
 
@@ -161,8 +156,7 @@ internal static class ProveedorReglas
         proveedor.Correo = Opcional(datos.Correo);
         proveedor.Direccion = Opcional(datos.Direccion);
         proveedor.Contacto = Opcional(datos.Contacto);
-        proveedor.EsTallerAutorizado = datos.EsTallerAutorizado;
-        proveedor.EsSuplidorCombustible = datos.EsSuplidorCombustible;
+        proveedor.Tipo = datos.Tipo;
     }
 }
 
@@ -216,8 +210,7 @@ public class GetProveedorQueryHandler(IUnitOfWork uow) : IRequestHandler<GetProv
                 Correo = p.Correo,
                 Direccion = p.Direccion,
                 Contacto = p.Contacto,
-                EsTallerAutorizado = p.EsTallerAutorizado,
-                EsSuplidorCombustible = p.EsSuplidorCombustible,
+                Tipo = p.Tipo,
                 Activo = p.Status
             })
             .FirstOrDefaultAsync(cancellationToken);

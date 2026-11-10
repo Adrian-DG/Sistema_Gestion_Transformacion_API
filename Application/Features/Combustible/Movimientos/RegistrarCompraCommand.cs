@@ -14,7 +14,7 @@ namespace Application.Features.Combustible.Movimientos;
 
 /// <summary>
 /// Registra una entrada (recepción) de combustible de un suplidor registrado en el sistema
-/// (<see cref="Domain.Entities.Taller.Proveedor"/> activo y marcado como suplidor de combustible). Se
+/// (<see cref="Domain.Entities.Taller.Proveedor"/> activo de tipo SuplidorCombustible). Se
 /// guarda también su nombre a la fecha.
 /// </summary>
 public record RegistrarCompraCommand(
@@ -47,10 +47,10 @@ public class RegistrarCompraCommandHandler(IUnitOfWork uow) : IRequestHandler<Re
     {
         var suplidor = await uow.Query<Proveedor>()
             .Where(p => p.Id == request.ProveedorId && p.Status)
-            .Select(p => new { p.Nombre, p.EsSuplidorCombustible })
+            .Select(p => new { p.Nombre, p.Tipo })
             .FirstOrDefaultAsync(cancellationToken);
         if (suplidor is null) return Result.Failure<Guid>(InventarioPiezasErrors.ProveedorNotFound(request.ProveedorId));
-        if (!suplidor.EsSuplidorCombustible) return Result.Failure<Guid>(CombustibleErrors.NoEsSuplidorCombustible(suplidor.Nombre));
+        if (suplidor.Tipo != TipoProveedor.SuplidorCombustible) return Result.Failure<Guid>(CombustibleErrors.NoEsSuplidorCombustible(suplidor.Nombre));
         var proveedor = suplidor.Nombre;
 
         var movimiento = new MovimientoCombustible
