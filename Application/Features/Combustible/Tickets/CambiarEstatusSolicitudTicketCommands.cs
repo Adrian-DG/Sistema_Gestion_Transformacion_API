@@ -1,4 +1,5 @@
-using Application.Contracts;
+﻿using Application.Contracts;
+using Application.Security;
 using Domain.Common;
 using Domain.Common.Errors;
 using Domain.Entities.Combustible;
@@ -34,6 +35,12 @@ public class CambiarEstatusSolicitudTicketCommandHandler(IUnitOfWork uow, ICurre
     public Task<Result> Handle(AprobarSolicitudTicketCommand request, CancellationToken cancellationToken) =>
         Execute(request.SolicitudId, async solicitud =>
         {
+            // Quien registra no aprueba (salvo el Administrador).
+            if (solicitud.CreatedBy == currentUser.UserId && !currentUser.TienePermiso(AppPermission.Administrador))
+            {
+                return Result.Failure(SolicitudTicketErrors.AutoAprobacion);
+            }
+
             var galonesPorTipo = solicitud.Tickets
                 .GroupBy(t => t.TipoCombustible)
                 .Select(g => new { Tipo = g.Key, Galones = g.Sum(t => t.Galones) });

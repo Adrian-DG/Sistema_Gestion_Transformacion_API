@@ -1,4 +1,4 @@
-namespace Application.Security;
+﻿namespace Application.Security;
 
 public enum AppPolicy
 {
@@ -12,5 +12,19 @@ public enum AppPolicy
     CanManageInventarioPiezas,
     CanReactivarVehiculos,
     /// <summary>Personalización del frontend; solo Administrador.</summary>
-    CanManageConfiguracion
+    CanManageConfiguracion,
+
+    // Lectura (incluye el permiso Consulta y a quienes trabajan en el flujo)
+    CanVerVehiculos,
+    CanVerPolizas,
+    CanVerAsignaciones,
+    CanVerCombustible,
+
+    // Aprobaciones y despacho, separados de quien registra
+    CanAprobarAsignaciones,
+    CanAprobarTickets,
+    CanDespacharCombustible,
+
+    /// <summary>Buscar personas registradas y miembros de SIPFFAA (datos personales).</summary>
+    CanBuscarPersonal
 }

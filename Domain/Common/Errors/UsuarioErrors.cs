@@ -1,4 +1,4 @@
-namespace Domain.Common.Errors;
+﻿namespace Domain.Common.Errors;
 
 public static class UsuarioErrors
 {
@@ -17,6 +17,10 @@ public static class UsuarioErrors
     public static Error AccionSobreSiMismo => Error.Conflict(
         "Usuario.AccionSobreSiMismo",
         "No puede desactivarse ni quitarse el permiso de Administrador a sí mismo.");
+
+    public static Error SoloAdministrador => Error.Forbidden(
+        "Usuario.SoloAdministrador",
+        "Solo un Administrador puede otorgar o quitar el permiso de Administrador, o modificar a un administrador.");
 
     public static Error UltimoAdministrador => Error.Conflict(
         "Usuario.UltimoAdministrador",

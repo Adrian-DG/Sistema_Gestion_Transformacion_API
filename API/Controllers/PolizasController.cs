@@ -1,8 +1,9 @@
-using API.Security;
+﻿using API.Security;
 using Application.Common.DTO;
 using Application.Features.Historico.Polizas;
 using Application.Security;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
@@ -12,11 +13,12 @@ namespace API.Controllers
     /// anterior queda en el historial.
     /// </summary>
     [Route("api/polizas")]
-    [AppAuthorize(AppPolicy.CanManagePolizas)]
+    [Authorize]
     public class PolizasController(IMediator mediator) : ApiControllerBase(mediator)
     {
         /// <summary>Registra una póliza y devuelve su Id.</summary>
         [HttpPost]
+        [AppAuthorize(AppPolicy.CanManagePolizas)]
         public async Task<IActionResult> Create([FromBody] CreatePolizaCommand command, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(command, cancellationToken);
@@ -28,6 +30,7 @@ namespace API.Controllers
         /// (Vigente, PorVencer o Vencida) y los días que le quedan.
         /// </summary>
         [HttpGet]
+        [AppAuthorize(AppPolicy.CanVerPolizas)]
         public async Task<IActionResult> Get([FromQuery] PaginationFilterQuery<PolizaViewModel> query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
@@ -35,6 +38,7 @@ namespace API.Controllers
         }
 
         [HttpGet("{id:Guid}")]
+        [AppAuthorize(AppPolicy.CanVerPolizas)]
         public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new IDEntityFilterQuery<PolizaDetalleViewModel>(id), cancellationToken);
@@ -43,6 +47,7 @@ namespace API.Controllers
 
         /// <summary>Corrige los datos de la póliza; para renovarla registre una nueva.</summary>
         [HttpPut("{id:Guid}")]
+        [AppAuthorize(AppPolicy.CanManagePolizas)]
         public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] DatosPolizaRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdatePolizaCommand(id, request.VehiculoId, request.AseguradoraId, request.Numero,

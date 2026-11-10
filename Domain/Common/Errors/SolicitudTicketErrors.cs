@@ -10,6 +10,10 @@ public static class SolicitudTicketErrors
         "SolicitudTicket.InvalidStatus",
         $"La solicitud de tickets con id '{id}' no puede cambiar de estado porque se encuentra '{estatusActual}'.");
 
+    public static Error AutoAprobacion => Error.Forbidden(
+        "SolicitudTicket.AutoAprobacion",
+        "No puede aprobar una solicitud de tickets que usted registró; debe aprobarla otra persona.");
+
     public static Error MotivoRequired => Error.Validation(
         "SolicitudTicket.MotivoRequired",
         "Debe indicar el motivo del rechazo o la cancelación.");

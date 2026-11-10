@@ -72,6 +72,7 @@ namespace Infraestructure
                         ValidAudience = configuration[JWTPropConstants.AUDIENCE],
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
                     };
+                    options.Events = new JwtBearerEvents { OnTokenValidated = SesionVigente.ValidarAsync };
                 });
 
             services.AddAuthorization(options =>
@@ -96,6 +97,24 @@ namespace Infraestructure
                     p => p.RequireRole(AppPermission.ReactivarVehiculos.ToString(), AppPermission.Administrador.ToString()));
                 options.AddPolicy(AppPolicy.CanManageConfiguracion.ToString(),
                     p => p.RequireRole(AppPermission.Administrador.ToString()));
+
+                // Administrador está incluido en todas.
+                void Politica(AppPolicy politica, params AppPermission[] permisos) =>
+                    options.AddPolicy(politica.ToString(), p => p.RequireRole(
+                        permisos.Append(AppPermission.Administrador).Select(x => x.ToString())));
+
+                Politica(AppPolicy.CanVerVehiculos, AppPermission.GestionVehiculos, AppPermission.Consulta);
+                Politica(AppPolicy.CanVerPolizas, AppPermission.GestionPolizas, AppPermission.Consulta);
+                Politica(AppPolicy.CanVerAsignaciones,
+                    AppPermission.GestionAsignaciones, AppPermission.AprobarAsignaciones, AppPermission.Consulta);
+                Politica(AppPolicy.CanVerCombustible,
+                    AppPermission.GestionCombustible, AppPermission.AprobarTickets, AppPermission.DespachoCombustible, AppPermission.Consulta);
+                Politica(AppPolicy.CanAprobarAsignaciones, AppPermission.AprobarAsignaciones);
+                Politica(AppPolicy.CanAprobarTickets, AppPermission.AprobarTickets);
+                Politica(AppPolicy.CanDespacharCombustible, AppPermission.DespachoCombustible, AppPermission.GestionCombustible);
+                Politica(AppPolicy.CanBuscarPersonal,
+                    AppPermission.GestionPersonas, AppPermission.GestionAsignaciones, AppPermission.GestionCombustible,
+                    AppPermission.DespachoCombustible, AppPermission.GestionTaller);
             });
 
             services.AddMemoryCache();            

@@ -1,4 +1,6 @@
-﻿using Application.Features.Externos;
+﻿using Application.Security;
+using API.Security;
+using Application.Features.Externos;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +13,7 @@ namespace API.Controllers
     /// (<c>origen = "Historico"</c>) y solo consultan SIPFFAA si no hay coincidencias o si se indica
     /// <c>soloSipffaa=true</c>.
     /// </summary>
-    [Authorize]
+    [AppAuthorize(AppPolicy.CanBuscarPersonal)]
     [Route("api/externos")]
     public class ExternosController(IMediator mediator) : ApiControllerBase(mediator)
     {

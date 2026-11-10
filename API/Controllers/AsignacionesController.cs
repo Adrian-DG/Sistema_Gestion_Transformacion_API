@@ -1,17 +1,19 @@
-using API.Security;
+﻿using API.Security;
 using Application.Common.DTO;
 using Application.Features.Historico.Asignaciones;
 using Application.Security;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers
 {
     [Route("api/asignaciones")]
-    [AppAuthorize(AppPolicy.CanManageAsignaciones)]
+    [Authorize]
     public class AsignacionesController(IMediator mediator) : ApiControllerBase(mediator)
     {
         [HttpPost]
+        [AppAuthorize(AppPolicy.CanManageAsignaciones)]
         public async Task<IActionResult> Create([FromBody] CreateAsignacionCommand command, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(command, cancellationToken);
@@ -19,6 +21,7 @@ namespace API.Controllers
         }
 
         [HttpGet]
+        [AppAuthorize(AppPolicy.CanVerAsignaciones)]
         public async Task<IActionResult> Get([FromQuery] FiltroAsignacionesQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
@@ -27,6 +30,7 @@ namespace API.Controllers
 
         /// <summary>Vehículos en servicio sin asignaciones aprobadas que choquen con el período.</summary>
         [HttpGet("vehiculos-disponibles")]
+        [AppAuthorize(AppPolicy.CanManageAsignaciones)]
         public async Task<IActionResult> GetVehiculosDisponibles([FromQuery] DateTime salida, [FromQuery] DateTime retornoEstimado, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new GetVehiculosDisponiblesQuery(salida, retornoEstimado), cancellationToken);
@@ -34,6 +38,7 @@ namespace API.Controllers
         }
 
         [HttpPost("{id:Guid}/aprobar")]
+        [AppAuthorize(AppPolicy.CanAprobarAsignaciones)]
         public async Task<IActionResult> Aprobar([FromRoute] Guid id, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new AprobarAsignacionCommand(id), cancellationToken);
@@ -41,6 +46,7 @@ namespace API.Controllers
         }
 
         [HttpPost("{id:Guid}/rechazar")]
+        [AppAuthorize(AppPolicy.CanAprobarAsignaciones)]
         public async Task<IActionResult> Rechazar([FromRoute] Guid id, [FromBody] MotivoRequest request, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new RechazarAsignacionCommand(id, request.Motivo), cancellationToken);
@@ -48,6 +54,7 @@ namespace API.Controllers
         }
 
         [HttpPost("{id:Guid}/cancelar")]
+        [AppAuthorize(AppPolicy.CanManageAsignaciones)]
         public async Task<IActionResult> Cancelar([FromRoute] Guid id, [FromBody] MotivoRequest request, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new CancelarAsignacionCommand(id, request.Motivo), cancellationToken);
@@ -55,6 +62,7 @@ namespace API.Controllers
         }
 
         [HttpPost("{id:Guid}/retorno")]
+        [AppAuthorize(AppPolicy.CanManageAsignaciones)]
         public async Task<IActionResult> RegistrarRetorno([FromRoute] Guid id, [FromBody] RetornoRequest request, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new RegistrarRetornoAsignacionCommand(id, request.FechaRetorno), cancellationToken);

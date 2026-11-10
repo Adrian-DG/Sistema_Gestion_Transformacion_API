@@ -1,4 +1,4 @@
-namespace Domain.Common.Errors;
+﻿namespace Domain.Common.Errors;
 
 public static class AsignacionErrors
 {
@@ -17,6 +17,10 @@ public static class AsignacionErrors
     public static Error FechaRetornoInvalida => Error.Validation(
         "Asignacion.FechaRetornoInvalida",
         "La fecha de retorno no puede ser anterior a la fecha de salida.");
+
+    public static Error AutoAprobacion => Error.Forbidden(
+        "Asignacion.AutoAprobacion",
+        "No puede aprobar una asignación que usted registró; debe aprobarla otra persona.");
 
     public static Error VehiculoOcupado(Guid vehiculoId) => Error.Conflict(
         "Asignacion.VehiculoOcupado",

@@ -1,4 +1,4 @@
-using Application.Security;
+﻿using Application.Security;
 using Infraestructure.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +22,10 @@ namespace Infraestructure.Data.Seed
             [AppPermission.GestionTaller] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000008"), "Solicitudes de taller y mecánicos"),
             [AppPermission.GestionInventarioPiezas] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000009"), "Piezas, proveedores y entradas al inventario del taller"),
             [AppPermission.ReactivarVehiculos] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000010"), "Reactivación excepcional de vehículos dados de baja"),
+            [AppPermission.AprobarAsignaciones] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000011"), "Aprobar o rechazar asignaciones de vehículos"),
+            [AppPermission.AprobarTickets] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000012"), "Aprobar o rechazar solicitudes de tickets de combustible"),
+            [AppPermission.DespachoCombustible] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000013"), "Canje de tickets y despachos de combustible"),
+            [AppPermission.Consulta] = (new("9b0e6c1a-0d6f-4c1e-8f3a-1a0000000014"), "Consulta de listados y reportes, sin modificar"),
         };
 
         public static void Seed(this ModelBuilder builder)

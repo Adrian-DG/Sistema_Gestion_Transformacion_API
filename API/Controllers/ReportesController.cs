@@ -1,4 +1,4 @@
-using API.Security;
+﻿using API.Security;
 using Application.Contracts.Reportes;
 using Application.Features.Configuracion;
 using Application.Features.Reportes.Asignaciones;
@@ -20,7 +20,7 @@ namespace API.Controllers
     public class ReportesController(IMediator mediator) : ApiControllerBase(mediator)
     {
         [HttpGet("combustible/estadisticas")]
-        [AppAuthorize(AppPolicy.CanManageCombustible)]
+        [AppAuthorize(AppPolicy.CanVerCombustible)]
         public async Task<IActionResult> EstadisticasCombustible([FromQuery] GetEstadisticasCombustibleQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
@@ -28,7 +28,7 @@ namespace API.Controllers
         }
 
         [HttpGet("combustible/excel")]
-        [AppAuthorize(AppPolicy.CanManageCombustible)]
+        [AppAuthorize(AppPolicy.CanVerCombustible)]
         public async Task<IActionResult> ExcelCombustible([FromQuery] GetReporteExcelCombustibleQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
@@ -36,7 +36,7 @@ namespace API.Controllers
         }
 
         [HttpGet("asignaciones/estadisticas")]
-        [AppAuthorize(AppPolicy.CanManageAsignaciones)]
+        [AppAuthorize(AppPolicy.CanVerAsignaciones)]
         public async Task<IActionResult> EstadisticasAsignaciones([FromQuery] GetEstadisticasAsignacionesQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
@@ -44,7 +44,7 @@ namespace API.Controllers
         }
 
         [HttpGet("asignaciones/excel")]
-        [AppAuthorize(AppPolicy.CanManageAsignaciones)]
+        [AppAuthorize(AppPolicy.CanVerAsignaciones)]
         public async Task<IActionResult> ExcelAsignaciones([FromQuery] GetReporteExcelAsignacionesQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);

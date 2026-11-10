@@ -1,3 +1,4 @@
+﻿using Application.Contracts;
 using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Contracts.Usuarios;
@@ -11,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infraestructure.Identity
 {
-    public class UsuarioService(MainContext context, UserManager<AppUser> userManager) : IUsuarioService
+    public class UsuarioService(MainContext context, UserManager<AppUser> userManager, ICurrentUserService currentUser) : IUsuarioService
     {
         private static readonly string RolAdministrador = AppPermission.Administrador.ToString();
         private static readonly HashSet<string> RolesValidos = Enum.GetNames<AppPermission>().ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -119,6 +120,7 @@ namespace Infraestructure.Identity
 
             var rolesInvalidos = RolesInvalidos(roles);
             if (rolesInvalidos.Count > 0) return Result.Failure<Guid>(UsuarioErrors.RolesInvalidos(rolesInvalidos));
+            if (!ActorEsAdministrador && roles.Any(EsRolAdministrador)) return Result.Failure<Guid>(UsuarioErrors.SoloAdministrador);
 
             var usuario = new AppUser
             {
@@ -149,6 +151,7 @@ namespace Infraestructure.Identity
         {
             var usuario = await userManager.FindByIdAsync(id.ToString());
             if (usuario is null) return Result.Failure(UsuarioErrors.NotFound(id));
+            if (!await PuedeModificarAsync(usuario)) return Result.Failure(UsuarioErrors.SoloAdministrador);
 
             var validacion = await ValidarDatosAsync(id, datos, cancellationToken);
             if (validacion.IsFailure) return validacion;
@@ -169,6 +172,12 @@ namespace Infraestructure.Identity
 
             var nuevos = roles.Select(Normalizar).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var actuales = await userManager.GetRolesAsync(usuario);
+
+            // Sin ser Administrador no se otorga ni se quita ese permiso, ni se tocan los de un administrador.
+            if (!ActorEsAdministrador && (actuales.Any(EsRolAdministrador) || nuevos.Any(EsRolAdministrador)))
+            {
+                return Result.Failure(UsuarioErrors.SoloAdministrador);
+            }
 
             var quitaAdministrador = actuales.Contains(RolAdministrador) && !nuevos.Contains(RolAdministrador);
             if (quitaAdministrador && usuario.Activo && !await ExisteOtroAdministradorActivoAsync(id, cancellationToken))
@@ -200,6 +209,7 @@ namespace Infraestructure.Identity
         {
             var usuario = await userManager.FindByIdAsync(id.ToString());
             if (usuario is null) return Result.Failure(UsuarioErrors.NotFound(id));
+            if (!await PuedeModificarAsync(usuario)) return Result.Failure(UsuarioErrors.SoloAdministrador);
             if (usuario.Activo == activo) return Result.Success();
 
             if (!activo
@@ -222,6 +232,14 @@ namespace Infraestructure.Identity
 
             return Result.Success();
         }
+
+        private bool ActorEsAdministrador => currentUser.TienePermiso(AppPermission.Administrador);
+
+        private static bool EsRolAdministrador(string rol) => string.Equals(rol, RolAdministrador, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>Un administrador solo puede ser modificado por otro Administrador.</summary>
+        private async Task<bool> PuedeModificarAsync(AppUser usuario) =>
+            ActorEsAdministrador || !await userManager.IsInRoleAsync(usuario, RolAdministrador);
 
         private async Task<Result> ValidarDatosAsync(Guid? id, DatosUsuario datos, CancellationToken cancellationToken)
         {

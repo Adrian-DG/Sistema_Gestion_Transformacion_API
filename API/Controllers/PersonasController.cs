@@ -1,4 +1,4 @@
-using API.Security;
+﻿using API.Security;
 using Application.Common.DTO;
 using Application.Features.Personas;
 using Application.Security;
@@ -18,6 +18,7 @@ namespace API.Controllers
     public class PersonasController(IMediator mediator) : ApiControllerBase(mediator)
     {
         [HttpGet]
+        [AppAuthorize(AppPolicy.CanBuscarPersonal)]
         public async Task<IActionResult> GetPersonas([FromQuery] PaginationFilterQuery<PersonaViewModel> query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
@@ -37,8 +38,7 @@ namespace API.Controllers
         /// Lo usan los formularios de solicitudes al elegir un miembro en el buscador de SIPFFAA.
         /// </summary>
         [HttpPost("sipffaa/{cedula}")]
-        [AppAuthorize(AppPermission.GestionPersonas, AppPermission.GestionAsignaciones,
-            AppPermission.GestionCombustible, AppPermission.GestionTaller, AppPermission.Administrador)]
+        [AppAuthorize(AppPolicy.CanBuscarPersonal)]
         public async Task<IActionResult> ImportarDeSipffaa([FromRoute] string cedula, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(new ImportarPersonaSipffaaCommand(cedula), cancellationToken);

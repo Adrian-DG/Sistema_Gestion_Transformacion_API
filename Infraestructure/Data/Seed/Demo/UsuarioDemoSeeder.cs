@@ -1,4 +1,4 @@
-using Application.Security;
+﻿using Application.Security;
 using Domain.Enums;
 using Infraestructure.Identity.Models;
 using Microsoft.AspNetCore.Identity;
@@ -29,7 +29,11 @@ namespace Infraestructure.Data.Seed.Demo
             new("seguridad", "999-1000004-4", "Carmen", "Ortiz Lora", SexoEnum.Femenino, InstitucionEnum.ARD, "Mayor",
                 [AppPermission.GestionUsuarios]),
             new("consulta", "999-1000005-5", "José Rafael", "Taveras Polanco", SexoEnum.Masculino, InstitucionEnum.MIDE, null,
-                [])
+                [AppPermission.Consulta]),
+            new("aprobador", "999-1000006-6", "Ramón Antonio", "Peña Castillo", SexoEnum.Masculino, InstitucionEnum.ERD, "Coronel",
+                [AppPermission.AprobarAsignaciones, AppPermission.AprobarTickets, AppPermission.Consulta]),
+            new("despacho", "999-1000007-7", "Pedro Julio", "Almonte Reyes", SexoEnum.Masculino, InstitucionEnum.ERD, "Sargento",
+                [AppPermission.DespachoCombustible])
         ];
 
         public static async Task SeedAsync(IServiceProvider provider, string? password, ILogger logger, CancellationToken cancellationToken)

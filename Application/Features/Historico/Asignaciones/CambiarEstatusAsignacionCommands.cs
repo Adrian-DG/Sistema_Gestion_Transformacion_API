@@ -1,4 +1,5 @@
-using Application.Contracts;
+﻿using Application.Contracts;
+using Application.Security;
 using Domain.Common;
 using Domain.Common.Errors;
 using Domain.Entities.Historico;
@@ -44,6 +45,12 @@ public class CambiarEstatusAsignacionCommandHandler(IUnitOfWork uow, ICurrentUse
     public Task<Result> Handle(AprobarAsignacionCommand request, CancellationToken cancellationToken) =>
         Execute(request.AsignacionId, async asignacion =>
         {
+            // Quien registra no aprueba (salvo el Administrador).
+            if (asignacion.CreatedBy == currentUser.UserId && !currentUser.TienePermiso(AppPermission.Administrador))
+            {
+                return Result.Failure(AsignacionErrors.AutoAprobacion);
+            }
+
             // El vehículo pudo entrar al taller o darse de baja mientras la solicitud estaba pendiente.
             var estado = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
                 .Where(v => v.Id == asignacion.VehiculoId)
