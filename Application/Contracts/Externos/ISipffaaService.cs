@@ -14,8 +14,11 @@ public interface ISipffaaService
     /// <summary>Departamentos activos cuyo nombre o descripción contienen el texto indicado.</summary>
     Task<IReadOnlyList<DepartamentoExternoDto>> BuscarDepartamentosAsync(string nombre, int maxResultados, CancellationToken cancellationToken);
 
-    /// <summary>Departamento por su código, activo o no (para mostrar registros históricos).</summary>
-    Task<DepartamentoExternoDto?> GetDepartamentoAsync(int codDepartamento, CancellationToken cancellationToken);
+    /// <summary>
+    /// Departamento por su código, activo o no (para mostrar registros históricos). El código se repite
+    /// entre instituciones: sin <paramref name="codInstitucion"/> devuelve el primero (activos primero).
+    /// </summary>
+    Task<DepartamentoExternoDto?> GetDepartamentoAsync(int codDepartamento, int? codInstitucion, CancellationToken cancellationToken);
 }
 
 /// <summary>Dónde se encontró un resultado de búsqueda: en los registros del sistema o en SIPFFAA.</summary>
@@ -109,6 +112,7 @@ public class DepartamentoExternoDto
 public class OcupanteCargoExternoDto
 {
     public int CodCargo { get; set; }
+    public int CodInstitucion { get; set; }
     public int CodMiembro { get; set; }
     public string Cedula { get; set; } = string.Empty;
     public string NombreCompleto { get; set; } = string.Empty;

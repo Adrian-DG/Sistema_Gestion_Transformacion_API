@@ -1,4 +1,4 @@
-namespace Infraestructure.External.Sipffaa
+﻿namespace Infraestructure.External.Sipffaa
 {
     /// <summary>
     /// SQL contra db_sipffaa. Las columnas se devuelven con los nombres de
@@ -11,7 +11,7 @@ namespace Infraestructure.External.Sipffaa
         /// Vista de miembros (entidad Miembros1 del sistema SIPFFAA). Confirmar el nombre real
         /// de la vista en la base: el sufijo "1" suele ser agregado por el generador de EF.
         /// </summary>
-        private const string VistaMiembros = "dbo.Miembros1";
+        private const string VistaMiembros = "Consultas.Miembros";
 
         /// <remarks>
         /// @Cedula llega sin guiones. Si la columna siempre se guarda sin guiones, quitar el REPLACE
@@ -53,14 +53,18 @@ namespace Infraestructure.External.Sipffaa
             ORDER BY m.NoOrdenRango, m.NombreApellidoCompleto
             """;
 
+        // En SIPFFAA los códigos de cargo y de departamento se repiten entre instituciones (ERD, ARD,
+        // FARD...): la clave real es el código junto con CodInstitucion. Todo cruce debe usar ambos.
+
         /// <summary>Tabla de cargos (entidad CARGO del sistema SIPFFAA).</summary>
-        private const string TablaCargos = "dbo.CARGO";
+        private const string TablaCargos = "misc.CARGOS";
 
         /// <remarks>Busca en el nombre y la descripción de los cargos activos, incluidos los vacantes.</remarks>
         public const string CargosPorNombre = $"""
             SELECT TOP (@MaxResultados)
                 c.CodCargo, c.Nombre, c.Descripcion, c.CodInstitucion, c.EsEncargado, c.EsUnica,
-                (SELECT COUNT(*) FROM {VistaMiembros} m WHERE m.CodCargo = c.CodCargo AND m.Status = 1) AS CantidadOcupantes
+                (SELECT COUNT(*) FROM {VistaMiembros} m
+                 WHERE m.CodCargo = c.CodCargo AND m.CodInstitucion = c.CodInstitucion AND m.Status = 1) AS CantidadOcupantes
             FROM {TablaCargos} c
             WHERE c.Status = 1
               AND (c.Nombre LIKE @Patron OR c.Descripcion LIKE @Patron)
@@ -68,7 +72,7 @@ namespace Infraestructure.External.Sipffaa
             """;
 
         /// <summary>Tabla de departamentos (entidad DEPARTAMENTO del sistema SIPFFAA).</summary>
-        private const string TablaDepartamentos = "dbo.DEPARTAMENTO";
+        private const string TablaDepartamentos = "misc.DEPARTAMENTOS";
 
         /// <summary>
         /// Columnas de <see cref="Application.Contracts.Externos.DepartamentoExternoDto"/> con el nombre del
@@ -82,7 +86,9 @@ namespace Infraestructure.External.Sipffaa
 
         private const string FromDepartamentos = $"""
             FROM {TablaDepartamentos} d
-            LEFT JOIN {TablaDepartamentos} p ON p.CodDepartamento = d.CodDptoPadre AND p.CodDepartamento <> d.CodDepartamento
+            LEFT JOIN {TablaDepartamentos} p
+                ON p.CodDepartamento = d.CodDptoPadre AND p.CodInstitucion = d.CodInstitucion
+               AND p.CodDepartamento <> d.CodDepartamento
             """;
 
         /// <remarks>Busca en el nombre, la descripción y NameToSearch de los departamentos activos.</remarks>
@@ -100,26 +106,29 @@ namespace Infraestructure.External.Sipffaa
                 {ColumnasDepartamento}
             {FromDepartamentos}
             WHERE d.CodDepartamento = @CodDepartamento
+              AND (@CodInstitucion IS NULL OR d.CodInstitucion = @CodInstitucion)
+            ORDER BY d.Status DESC
             """;
 
         /// <remarks>
         /// Miembros activos de los cargos indicados, limitados por cargo porque un cargo
-        /// no único (ej. Ayudante) puede tener muchos ocupantes.
+        /// no único (ej. Ayudante) puede tener muchos ocupantes. Filtra por código e institución por
+        /// separado; el servicio descarta las combinaciones que no corresponden a ningún cargo pedido.
         /// </remarks>
         public const string OcupantesPorCargos = $"""
-            SELECT CodCargo, CodMiembro, Cedula, NombreCompleto, Rango, Departamento
+            SELECT CodCargo, CodInstitucion, CodMiembro, Cedula, NombreCompleto, Rango, Departamento
             FROM (
                 SELECT
-                    m.CodCargo, m.CodMiembro, m.Cedula,
+                    m.CodCargo, m.CodInstitucion, m.CodMiembro, m.Cedula,
                     m.NombreApellidoCompleto AS NombreCompleto,
                     m.RangoAbreviado AS Rango,
                     m.Departamento,
-                    ROW_NUMBER() OVER (PARTITION BY m.CodCargo ORDER BY m.NoOrdenRango, m.NombreApellidoCompleto) AS Fila
+                    ROW_NUMBER() OVER (PARTITION BY m.CodCargo, m.CodInstitucion ORDER BY m.NoOrdenRango, m.NombreApellidoCompleto) AS Fila
                 FROM {VistaMiembros} m
-                WHERE m.Status = 1 AND m.CodCargo IN @CodCargos
+                WHERE m.Status = 1 AND m.CodCargo IN @CodCargos AND m.CodInstitucion IN @CodInstituciones
             ) o
             WHERE o.Fila <= @MaxOcupantes
-            ORDER BY o.CodCargo, o.Fila
+            ORDER BY o.CodCargo, o.CodInstitucion, o.Fila
             """;
     }
 }

@@ -1,4 +1,4 @@
-using Application.Contracts.Externos;
+﻿using Application.Contracts.Externos;
 using Dapper;
 
 namespace Infraestructure.External.Sipffaa
@@ -59,16 +59,21 @@ namespace Infraestructure.External.Sipffaa
 
             var ocupantesCommand = new CommandDefinition(
                 SipffaaQueries.OcupantesPorCargos,
-                new { CodCargos = cargos.Select(c => c.CodCargo).ToArray(), MaxOcupantes = MaxOcupantesPorCargo },
+                new
+                {
+                    CodCargos = cargos.Select(c => c.CodCargo).Distinct().ToArray(),
+                    CodInstituciones = cargos.Select(c => c.CodInstitucion).Distinct().ToArray(),
+                    MaxOcupantes = MaxOcupantesPorCargo
+                },
                 commandTimeout: CommandTimeoutSeconds,
                 cancellationToken: cancellationToken);
 
             var ocupantes = (await connection.QueryAsync<OcupanteCargoExternoDto>(ocupantesCommand))
-                .ToLookup(o => o.CodCargo);
+                .ToLookup(o => (o.CodCargo, o.CodInstitucion));
 
             foreach (var cargo in cargos)
             {
-                cargo.Ocupantes = ocupantes[cargo.CodCargo].ToList();
+                cargo.Ocupantes = ocupantes[(cargo.CodCargo, cargo.CodInstitucion)].ToList();
             }
 
             return cargos;
@@ -87,13 +92,13 @@ namespace Infraestructure.External.Sipffaa
             return (await connection.QueryAsync<DepartamentoExternoDto>(command)).AsList();
         }
 
-        public async Task<DepartamentoExternoDto?> GetDepartamentoAsync(int codDepartamento, CancellationToken cancellationToken)
+        public async Task<DepartamentoExternoDto?> GetDepartamentoAsync(int codDepartamento, int? codInstitucion, CancellationToken cancellationToken)
         {
             using var connection = connectionFactory.CreateConnection();
 
             var command = new CommandDefinition(
                 SipffaaQueries.DepartamentoPorCodigo,
-                new { CodDepartamento = codDepartamento },
+                new { CodDepartamento = codDepartamento, CodInstitucion = codInstitucion },
                 commandTimeout: CommandTimeoutSeconds,
                 cancellationToken: cancellationToken);
 

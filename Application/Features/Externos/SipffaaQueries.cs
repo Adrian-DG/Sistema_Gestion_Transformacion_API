@@ -22,7 +22,8 @@ public record BuscarCargosExternosQuery(string Nombre, int MaxResultados = 20, b
 public record BuscarDepartamentosExternosQuery(string Nombre, int MaxResultados = 20, bool SoloSipffaa = false)
     : IRequest<Result<IReadOnlyList<DepartamentoExternoDto>>>;
 
-public record GetDepartamentoExternoQuery(int CodDepartamento) : IRequest<Result<DepartamentoExternoDto>>;
+/// <summary>El código se repite entre instituciones; indique <paramref name="CodInstitucion"/> para precisarlo.</summary>
+public record GetDepartamentoExternoQuery(int CodDepartamento, int? CodInstitucion = null) : IRequest<Result<DepartamentoExternoDto>>;
 
 public class GetMiembroByCedulaQueryValidator : AbstractValidator<GetMiembroByCedulaQuery>
 {
@@ -122,7 +123,7 @@ public class SipffaaQueryHandler(ISipffaaService sipffaa, IUnitOfWork uow) :
 
     public async Task<Result<DepartamentoExternoDto>> Handle(GetDepartamentoExternoQuery request, CancellationToken cancellationToken)
     {
-        var departamento = await sipffaa.GetDepartamentoAsync(request.CodDepartamento, cancellationToken);
+        var departamento = await sipffaa.GetDepartamentoAsync(request.CodDepartamento, request.CodInstitucion, cancellationToken);
 
         return departamento is not null
             ? Result.Success(departamento)

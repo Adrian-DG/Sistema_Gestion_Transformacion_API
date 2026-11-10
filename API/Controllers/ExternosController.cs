@@ -48,10 +48,11 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        /// <summary>El código se repite entre instituciones: indique <c>codInstitucion</c> para precisarlo.</summary>
         [HttpGet("departamentos/{codDepartamento:int}")]
-        public async Task<IActionResult> GetDepartamento([FromRoute] int codDepartamento, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetDepartamento([FromRoute] int codDepartamento, [FromQuery] int? codInstitucion, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetDepartamentoExternoQuery(codDepartamento), cancellationToken);
+            var result = await _mediator.Send(new GetDepartamentoExternoQuery(codDepartamento, codInstitucion), cancellationToken);
             return HandleResult(result);
         }
     }
