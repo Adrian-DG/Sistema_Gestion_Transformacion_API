@@ -1,5 +1,6 @@
-using Domain.Abstraction;
+﻿using Domain.Abstraction;
 using Domain.Entities.Historico;
+using Domain.Entities.Taller;
 using Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -22,7 +23,9 @@ namespace Domain.Entities.Combustible
         [DataType(DataType.MultilineText)]
         public string? Proposito { get; set; }
 
-        // Compra
+        // Compra: suplidor registrado en el sistema y su nombre al momento de la entrada
+        public Guid? ProveedorId { get; set; }
+        public virtual Proveedor? Suplidor { get; set; }
         public string? Proveedor { get; set; }
         public string? NumeroFactura { get; set; }
 

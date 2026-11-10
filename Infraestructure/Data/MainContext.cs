@@ -103,6 +103,7 @@ namespace Infraestructure.Data
                 e.Property(m => m.Galones).HasPrecision(12, 2);
                 e.HasOne(m => m.SolicitantePersona).WithMany().HasForeignKey(m => m.SolicitantePersonaId);
                 e.HasOne(m => m.ReceptorPersona).WithMany().HasForeignKey(m => m.ReceptorPersonaId);
+                e.HasOne(m => m.Suplidor).WithMany().HasForeignKey(m => m.ProveedorId).OnDelete(DeleteBehavior.Restrict);
                 e.HasIndex(m => new { m.TipoCombustible, m.Fecha });
                 e.Property(m => m.DependenciaSolicitante).HasMaxLength(200);
             });

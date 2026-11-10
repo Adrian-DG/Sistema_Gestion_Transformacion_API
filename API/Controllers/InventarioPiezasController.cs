@@ -1,4 +1,4 @@
-using API.Security;
+﻿using API.Security;
 using Application.Features.Taller.Inventario;
 using Application.Security;
 using MediatR;
@@ -115,7 +115,7 @@ namespace API.Controllers
         public async Task<IActionResult> UpdateProveedor([FromRoute] Guid id, [FromBody] DatosProveedorRequest request, CancellationToken cancellationToken)
         {
             var command = new UpdateProveedorCommand(id, request.Nombre, request.Rnc, request.Telefono, request.Correo,
-                request.Direccion, request.Contacto, request.Activo, request.EsTallerAutorizado);
+                request.Direccion, request.Contacto, request.Activo, request.EsTallerAutorizado, request.EsSuplidorCombustible);
             var result = await _mediator.Send(command, cancellationToken);
             return HandleResult(result);
         }
@@ -142,5 +142,5 @@ namespace API.Controllers
     public record DatosPiezaRequest(string Codigo, string Nombre, string? Descripcion, string UnidadMedida, decimal ExistenciaMinima, bool Activo, string? CodigoBarras = null);
 
     public record DatosProveedorRequest(string Nombre, string? Rnc, string? Telefono, string? Correo, string? Direccion, string? Contacto, bool Activo,
-        bool EsTallerAutorizado = false);
+        bool EsTallerAutorizado = false, bool EsSuplidorCombustible = false);
 }

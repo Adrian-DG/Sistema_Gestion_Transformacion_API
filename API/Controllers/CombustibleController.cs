@@ -2,6 +2,7 @@
 using Application.Common.DTO;
 using Application.Features.Combustible.Movimientos;
 using Application.Features.Combustible.Tickets;
+using Application.Features.Taller.Inventario;
 using Application.Security;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,14 @@ namespace API.Controllers
         public async Task<IActionResult> GetMovimientos([FromQuery] PaginationFilterQuery<MovimientoCombustibleViewModel> query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Suplidores de combustible activos, para la entrada de combustible.</summary>
+        [HttpGet("proveedores")]
+        public async Task<IActionResult> GetProveedores(CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetProveedoresCatalogoQuery(SoloCombustible: true), cancellationToken);
             return HandleResult(result);
         }
 

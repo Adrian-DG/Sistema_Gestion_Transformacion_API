@@ -1,4 +1,4 @@
-using Application.Common.DTO;
+﻿using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Contracts;
 using Domain.Common;
@@ -18,6 +18,7 @@ public class MovimientoCombustibleViewModel
     public required string TipoCombustible { get; set; }
     public decimal Galones { get; set; }
     public string? Proposito { get; set; }
+    public Guid? ProveedorId { get; set; }
     public string? Proveedor { get; set; }
     public string? NumeroFactura { get; set; }
     public string? Solicitante { get; set; }
@@ -78,6 +79,7 @@ public class GetMovimientosQueryHandler(IUnitOfWork uow) :
                 TipoCombustible = m.TipoCombustible.ToString(),
                 Galones = m.Galones,
                 Proposito = m.Proposito,
+                ProveedorId = m.ProveedorId,
                 Proveedor = m.Proveedor,
                 NumeroFactura = m.NumeroFactura,
                 Solicitante = m.SolicitantePersona != null ? m.SolicitantePersona.Apellido + " " + m.SolicitantePersona.Nombre : null,
