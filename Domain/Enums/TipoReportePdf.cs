@@ -1,4 +1,4 @@
-namespace Domain.Enums
+﻿namespace Domain.Enums
 {
     /// <summary>
     /// Reportes PDF del sistema. Cada plantilla puede personalizar el título de cada uno;
@@ -7,7 +7,9 @@ namespace Domain.Enums
     public enum TipoReportePdf
     {
         OperacionesCombustible = 1,
-        Asignaciones = 2
+        Asignaciones = 2,
+        /// <summary>Constancia de una asignación de vehículo (un documento por asignación).</summary>
+        AsignacionVehiculo = 3
     }
 
     public static class TiposReportePdf
@@ -16,6 +18,7 @@ namespace Domain.Enums
         {
             TipoReportePdf.OperacionesCombustible => "Operaciones de combustible",
             TipoReportePdf.Asignaciones => "Asignaciones de vehículos",
+            TipoReportePdf.AsignacionVehiculo => "Constancia de asignación de vehículo",
             _ => tipo.ToString()
         };
 
@@ -23,6 +26,7 @@ namespace Domain.Enums
         {
             TipoReportePdf.OperacionesCombustible => "Reporte de operaciones de combustible",
             TipoReportePdf.Asignaciones => "Reporte de asignaciones de vehículos",
+            TipoReportePdf.AsignacionVehiculo => "Constancia de asignación de vehículo",
             _ => tipo.ToString()
         };
     }

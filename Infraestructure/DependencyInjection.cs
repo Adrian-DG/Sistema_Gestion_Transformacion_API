@@ -138,6 +138,11 @@ namespace Infraestructure
             services.AddScoped<IUsuarioService, UsuarioService>();
             services.AddSingleton<IExcelReportGenerator, ClosedXmlReportGenerator>();
 
+            // Licencia Community de QuestPDF: válida para organizaciones con ingresos anuales menores a
+            // 1 millón de USD (ver https://www.questpdf.com/license/). Revísela antes de producción.
+            QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+            services.AddSingleton<IPdfReportGenerator, QuestPdfReportGenerator>();
+
             // Sistemas externos (Dapper)
             services.AddSingleton<ISipffaaConnectionFactory, SipffaaConnectionFactory>();
             services.AddScoped<ISipffaaService, SipffaaService>();

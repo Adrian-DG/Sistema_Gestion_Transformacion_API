@@ -1,4 +1,5 @@
-﻿using API.Security;
+﻿using Application.Features.Reportes.Asignaciones;
+using API.Security;
 using Application.Common.DTO;
 using Application.Features.Historico.Asignaciones;
 using Application.Security;
@@ -35,6 +36,20 @@ namespace API.Controllers
         {
             var result = await _mediator.Send(new GetVehiculosDisponiblesQuery(salida, retornoEstimado), cancellationToken);
             return HandleResult(result);
+        }
+
+        /// <summary>
+        /// PDF de la asignación con el encabezado de la plantilla de reportes y el logo de la organización
+        /// (o el predeterminado). Solo las aprobadas o finalizadas son una constancia válida.
+        /// </summary>
+        [HttpGet("{id:Guid}/constancia")]
+        [AppAuthorize(AppPolicy.CanVerAsignaciones)]
+        public async Task<IActionResult> GetConstancia([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetConstanciaAsignacionQuery(id), cancellationToken);
+            return result.IsSuccess
+                ? File(result.Value.Contenido, "application/pdf", result.Value.NombreArchivo)
+                : HandleFailure(result);
         }
 
         [HttpPost("{id:Guid}/aprobar")]
