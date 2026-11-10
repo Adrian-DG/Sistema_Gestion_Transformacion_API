@@ -304,6 +304,12 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
             return Result.Failure<PiezaAgregadaViewModel>(InventarioPiezasErrors.ProveedorNotFound(datosCompra.ProveedorId));
         }
 
+        if (request.Compra is { } compraConRecibo)
+        {
+            var tipoRecibo = await uow.ValidarTiposDocumentoAsync(TiposOperacion.CompraPieza, [compraConRecibo.Recibo], cancellationToken);
+            if (tipoRecibo.IsFailure) return Result.Failure<PiezaAgregadaViewModel>(tipoRecibo.Error);
+        }
+
         return await uow.EnTransaccionAsync(async () =>
         {
             var (existencia, costoPromedio) = await uow.ObtenerExistenciaAsync(request.PiezaId, cancellationToken);
@@ -381,6 +387,9 @@ public class SolicitudTallerCommandsHandler(IUnitOfWork uow) :
                 return Result.Failure(Error.Validation(
                     "Taller.CostoServicioRequerido", "Indique lo que cobró el taller autorizado por el servicio."));
             }
+
+            var tiposDocumento = await uow.ValidarTiposDocumentoAsync(TiposOperacion.SolicitudTaller, request.Adjuntos, cancellationToken);
+            if (tiposDocumento.IsFailure) return tiposDocumento;
 
             var factura = string.IsNullOrWhiteSpace(request.NumeroFacturaServicio) ? null : request.NumeroFacturaServicio.Trim();
             resultado = solicitud.FinalizarExterna(request.Diagnostico.Trim(), request.TrabajoRealizado.Trim(), costo, factura, DateTime.Now);

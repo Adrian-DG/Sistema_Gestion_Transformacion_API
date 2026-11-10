@@ -1,4 +1,4 @@
-using Application.Features.Misc;
+﻿using Application.Features.Misc;
 using Application.Features.Misc.ViewModels;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -38,10 +38,14 @@ namespace API.Controllers
             return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
         }
 
+        /// <summary>
+        /// Tipos de documento activos; con <c>operacion</c> (Id de TipoOperacion), solo los que se pueden
+        /// adjuntar en ese flujo.
+        /// </summary>
         [HttpGet("tipos-documento")]
-        public async Task<IActionResult> GetTipoDocumentos(CancellationToken cancellationToken)
+        public async Task<IActionResult> GetTipoDocumentos([FromQuery] Guid? operacion, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new GetTipoDocumentosQuery(), cancellationToken);
+            var result = await _mediator.Send(new GetTipoDocumentosQuery(operacion), cancellationToken);
             return result.IsSuccess ? Ok(result.Value) : HandleFailure(result);
         }
 

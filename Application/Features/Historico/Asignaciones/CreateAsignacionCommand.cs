@@ -1,4 +1,4 @@
-using Application.Common.DTO;
+﻿using Application.Common.DTO;
 using Application.Common.Validation;
 using Application.Contracts;
 using Domain.Common;
@@ -111,6 +111,9 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         {
             return Result.Failure<Guid>(AsignacionErrors.VehiculoOcupado(request.VehiculoId));
         }
+
+        var tiposDocumento = await unitOfWork.ValidarTiposDocumentoAsync(TiposOperacion.Asignacion, request.Adjuntos, cancellationToken);
+        if (tiposDocumento.IsFailure) return Result.Failure<Guid>(tiposDocumento.Error);
 
         var asignacion = new Asignacion
         {

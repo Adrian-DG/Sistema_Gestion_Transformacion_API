@@ -80,6 +80,9 @@ public class CreateSolicitudTicketCommandHandler(IUnitOfWork uow)
 
         var esCargo = request.TipoBeneficiario == TipoBeneficiario.Cargo;
 
+        var tiposDocumento = await uow.ValidarTiposDocumentoAsync(TiposOperacion.SolicitudTicket, request.Adjuntos, cancellationToken);
+        if (tiposDocumento.IsFailure) return Result.Failure<SolicitudTicketCreadaViewModel>(tiposDocumento.Error);
+
         // Los números se reservan en la misma transacción que guarda la solicitud: si algo falla,
         // la secuencia vuelve atrás y no quedan números saltados.
         return await uow.EnTransaccionAsync(async () =>

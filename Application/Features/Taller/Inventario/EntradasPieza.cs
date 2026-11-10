@@ -1,5 +1,6 @@
-using Application.Common.DTO;
+﻿using Application.Common.DTO;
 using Application.Common.Response;
+using Application.Common.Validation;
 using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
@@ -61,6 +62,9 @@ public class RegistrarEntradaPiezaCommandHandler(IUnitOfWork uow) : IRequestHand
         var activas = await uow.Query<Pieza>().Where(p => ids.Contains(p.Id) && p.Status).Select(p => p.Id).ToListAsync(cancellationToken);
         var noEncontrada = ids.FirstOrDefault(id => !activas.Contains(id));
         if (noEncontrada != Guid.Empty) return Result.Failure<Guid>(InventarioPiezasErrors.PiezaNotFound(noEncontrada));
+
+        var tiposDocumento = await uow.ValidarTiposDocumentoAsync(TiposOperacion.EntradaPieza, request.Adjuntos, cancellationToken);
+        if (tiposDocumento.IsFailure) return Result.Failure<Guid>(tiposDocumento.Error);
 
         var fecha = request.Fecha ?? DateTime.Now;
         var entrada = new EntradaPieza

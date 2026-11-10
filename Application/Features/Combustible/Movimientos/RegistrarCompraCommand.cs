@@ -1,4 +1,5 @@
 ﻿using Application.Common.DTO;
+using Application.Common.Validation;
 using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
@@ -52,6 +53,9 @@ public class RegistrarCompraCommandHandler(IUnitOfWork uow) : IRequestHandler<Re
         if (suplidor is null) return Result.Failure<Guid>(InventarioPiezasErrors.ProveedorNotFound(request.ProveedorId));
         if (suplidor.Tipo != TipoProveedor.SuplidorCombustible) return Result.Failure<Guid>(CombustibleErrors.NoEsSuplidorCombustible(suplidor.Nombre));
         var proveedor = suplidor.Nombre;
+
+        var tiposDocumento = await uow.ValidarTiposDocumentoAsync(TiposOperacion.MovimientoCombustible, request.Adjuntos, cancellationToken);
+        if (tiposDocumento.IsFailure) return Result.Failure<Guid>(tiposDocumento.Error);
 
         var movimiento = new MovimientoCombustible
         {

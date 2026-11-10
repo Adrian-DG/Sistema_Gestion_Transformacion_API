@@ -1,7 +1,9 @@
+﻿using Application.Common.DTO;
 using Application.Contracts;
 using Domain.Common;
 using Domain.Common.Errors;
 using Domain.Entities.Historico;
+using Domain.Entities.Misc;
 using Domain.Enums;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +22,23 @@ public static class ReferenceChecks
         return tipo == TipoBeneficiario.Persona
             ? await uow.ValidarPersonaAsync(personaId!.Value, cancellationToken)
             : Result.Success();
+    }
+
+    /// <summary>Todos los adjuntos deben ser de un tipo de documento permitido en el flujo.</summary>
+    public static async Task<Result> ValidarTiposDocumentoAsync(
+        this IUnitOfWork uow, Guid tipoOperacionId, IEnumerable<AdjuntoRequest>? adjuntos, CancellationToken cancellationToken)
+    {
+        var tipos = adjuntos?.Select(a => a.TipoDocumentoId).Distinct().ToList() ?? [];
+        if (tipos.Count == 0) return Result.Success();
+
+        var permitidos = await uow.Query<TipoDocumentoOperacion>()
+            .Where(p => p.TipoOperacionId == tipoOperacionId && tipos.Contains(p.TipoDocumentoId) && p.TipoDocumento!.Status)
+            .Select(p => p.TipoDocumentoId)
+            .ToListAsync(cancellationToken);
+
+        return tipos.All(permitidos.Contains)
+            ? Result.Success()
+            : Result.Failure(AdjuntoErrors.TipoNoPermitido);
     }
 
     public static async Task<Result> ValidarPersonaAsync(this IUnitOfWork uow, Guid id, CancellationToken cancellationToken)

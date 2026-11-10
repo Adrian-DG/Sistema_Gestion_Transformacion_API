@@ -50,6 +50,13 @@ namespace Infraestructure.Data
             builder.Entity<TipoDocumento>(e => e.ToTable("TipoDocumentos", "misc"));
             builder.Entity<TipoVehiculo>(e => e.ToTable("TipoVehiculos", "misc"));
             builder.Entity<TipoOperacion>(e => e.ToTable("TipoOperaciones", "misc"));
+            builder.Entity<TipoDocumentoOperacion>(e =>
+            {
+                e.ToTable("TipoDocumentoOperaciones", "misc");
+                e.HasKey(t => new { t.TipoOperacionId, t.TipoDocumentoId });
+                e.HasOne(t => t.TipoDocumento).WithMany().HasForeignKey(t => t.TipoDocumentoId);
+                e.HasOne(t => t.TipoOperacion).WithMany().HasForeignKey(t => t.TipoOperacionId);
+            });
 
             // Historical entities
             builder.Entity<Asignacion>(e =>
@@ -316,6 +323,7 @@ namespace Infraestructure.Data
             MarcaSeeder.Seed(builder);
             ModeloSeeder.Seed(builder);
             CatalogoVehiculoSeeder.Seed(builder);
+            TipoDocumentoOperacionSeeder.Seed(builder);
             AparienciaSeeder.Seed(builder);
             PlantillaReporteSeeder.Seed(builder);
             #endregion
@@ -330,6 +338,7 @@ namespace Infraestructure.Data
         public DbSet<TipoDocumento> TipoDocumentos { get; set; }
         public DbSet<TipoVehiculo> TipoVehiculos { get; set; }
         public DbSet<TipoOperacion> TipoOperaciones { get; set; }
+        public DbSet<TipoDocumentoOperacion> TipoDocumentoOperaciones { get; set; }
 
         public DbSet<Asignacion> Asignaciones { get; set; }
         public DbSet<Adjunto> Adjuntos { get; set; }
