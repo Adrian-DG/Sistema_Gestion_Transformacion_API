@@ -1,4 +1,4 @@
-using Application.Contracts;
+﻿using Application.Contracts;
 using Application.Features.Misc.ViewModels;
 using Domain.Common;
 using Domain.Entities.Historico;
@@ -11,7 +11,8 @@ namespace Application.Features.Historico.Asignaciones;
 
 /// <summary>
 /// Vehículos operativos (ni en mantenimiento ni inactivos) sin asignaciones aprobadas que choquen con el período (misma regla que
-/// <see cref="DisponibilidadVehiculo.VehiculoOcupadoAsync"/>). Nombre: "Placa · Marca Modelo (año)".
+/// <see cref="DisponibilidadVehiculo.ValidarAsignacionAsync"/>). Nombre: "Placa · Marca Modelo (año)", con
+/// " · mantenimiento pendiente" si tiene una solicitud de taller pendiente de ingreso.
 /// </summary>
 public record GetVehiculosDisponiblesQuery(DateTime Salida, DateTime RetornoEstimado)
     : IRequest<Result<IReadOnlyList<CatalogItemViewModel>>>;
@@ -37,13 +38,18 @@ public class GetVehiculosDisponiblesQueryHandler(IUnitOfWork uow)
                 (a.FechaRetornoEstimada > request.Salida || a.FechaRetornoEstimada < ahora))
             .Select(a => a.VehiculoId);
 
+        var pendientesTaller = uow.Query<Domain.Entities.Taller.SolicitudTaller>()
+            .Where(s => s.Estatus == EstatusSolicitudTaller.Pendiente)
+            .Select(s => s.VehiculoId);
+
         var vehiculos = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
             .Where(v => v.Estado == EstadoVehiculo.Operativo && !ocupados.Contains(v.Id))
             .OrderBy(v => v.Placa)
             .Select(v => new CatalogItemViewModel
             {
                 Id = v.Id,
-                Nombre = v.Placa + " · " + v.Marca!.Nombre + " " + v.Modelo!.Nombre + " (" + v.Fabricacion + ")"
+                Nombre = v.Placa + " · " + v.Marca!.Nombre + " " + v.Modelo!.Nombre + " (" + v.Fabricacion + ")" +
+                    (pendientesTaller.Contains(v.Id) ? " · mantenimiento pendiente" : "")
             })
             .ToListAsync(cancellationToken);
 

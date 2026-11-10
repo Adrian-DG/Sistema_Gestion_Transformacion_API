@@ -14,7 +14,9 @@ namespace Application.Features.Historico.Asignaciones;
 
 /// <summary>
 /// Registra la solicitud de un vehículo. Queda en estatus Pendiente hasta su aprobación;
-/// mientras tanto el vehículo sigue disponible.
+/// mientras tanto el vehículo sigue disponible. Aplica las reglas de <see cref="DisponibilidadVehiculo"/>:
+/// si hay advertencias (mantenimiento pendiente, póliza) responde Asignacion.RequiereConfirmacion hasta que
+/// se envíe <paramref name="ConfirmarAdvertencias"/>.
 /// </summary>
 /// <remarks>
 /// Las personas (solicitante, asignado y chofer) se identifican por su registro en el sistema, que guarda
@@ -36,7 +38,8 @@ public record CreateAsignacionCommand(
     string? Destino,
     DateTime FechaSalida,
     DateTime FechaRetornoEstimada,
-    List<AdjuntoRequest> Adjuntos
+    List<AdjuntoRequest> Adjuntos,
+    bool ConfirmarAdvertencias = false
 ) : IRequest<Result<Guid>>;
 
 public class CreateAsignacionCommandValidator : AbstractValidator<CreateAsignacionCommand>
@@ -70,6 +73,9 @@ public class CreateAsignacionCommandValidator : AbstractValidator<CreateAsignaci
         RuleFor(x => x.FechaRetornoEstimada)
             .GreaterThan(x => x.FechaSalida)
             .WithMessage("La fecha de retorno estimada debe ser posterior a la fecha de salida.");
+        RuleFor(x => x.FechaRetornoEstimada)
+            .GreaterThan(_ => DateTime.Now)
+            .WithMessage("La fecha de retorno estimada ya pasó; indique un período vigente.");
         RuleFor(x => x.Adjuntos)
             .NotNull()
             .NotEmpty()
@@ -95,22 +101,10 @@ public class CreateAsignacionCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             return Result.Failure<Guid>(PersonaErrors.NotFound(noEncontrada));
         }
 
-        var vehiculoResult = await unitOfWork.VehiculoRepository.GetById(request.VehiculoId, cancellationToken);
-        if (vehiculoResult.IsFailure) return Result.Failure<Guid>(vehiculoResult.Error);
-
-        // En mantenimiento o inactivo no se asigna; las misiones se validan por fechas a continuación.
-        if (vehiculoResult.Value.Estado != EstadoVehiculo.Operativo)
-        {
-            return Result.Failure<Guid>(VehiculoErrors.NoOperativo(request.VehiculoId, vehiculoResult.Value.Estado));
-        }
-
-        var ocupado = await unitOfWork.VehiculoOcupadoAsync(
-            request.VehiculoId, request.FechaSalida, request.FechaRetornoEstimada, null, DateTime.Now, cancellationToken);
-
-        if (ocupado)
-        {
-            return Result.Failure<Guid>(AsignacionErrors.VehiculoOcupado(request.VehiculoId));
-        }
+        var disponible = await unitOfWork.ValidarAsignacionAsync(
+            request.VehiculoId, request.ChoferPersonaId, request.FechaSalida, request.FechaRetornoEstimada,
+            null, request.ConfirmarAdvertencias, cancellationToken);
+        if (disponible.IsFailure) return Result.Failure<Guid>(disponible.Error);
 
         var tiposDocumento = await unitOfWork.ValidarTiposDocumentoAsync(TiposOperacion.Asignacion, request.Adjuntos, cancellationToken);
         if (tiposDocumento.IsFailure) return Result.Failure<Guid>(tiposDocumento.Error);

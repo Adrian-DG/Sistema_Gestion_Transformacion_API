@@ -9,7 +9,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Application.Features.Historico.Asignaciones;
 
-public record AprobarAsignacionCommand(Guid AsignacionId) : IRequest<Result>;
+/// <summary>
+/// Aprueba la asignación y reserva el vehículo. Vuelve a aplicar las reglas de disponibilidad (pudo cambiar
+/// desde el registro); con advertencias responde Asignacion.RequiereConfirmacion hasta que se envíe
+/// <paramref name="ConfirmarAdvertencias"/>.
+/// </summary>
+public record AprobarAsignacionCommand(Guid AsignacionId, bool ConfirmarAdvertencias = false) : IRequest<Result>;
 
 public record RechazarAsignacionCommand(Guid AsignacionId, string Motivo) : IRequest<Result>;
 
@@ -51,25 +56,16 @@ public class CambiarEstatusAsignacionCommandHandler(IUnitOfWork uow, ICurrentUse
                 return Result.Failure(AsignacionErrors.AutoAprobacion);
             }
 
-            // El vehículo pudo entrar al taller o darse de baja mientras la solicitud estaba pendiente.
-            var estado = await uow.Query<Domain.Entities.Recursos.Vehiculo>()
-                .Where(v => v.Id == asignacion.VehiculoId)
-                .Select(v => v.Estado)
-                .FirstAsync(cancellationToken);
-
-            if (estado != Domain.Enums.EstadoVehiculo.Operativo)
+            if (asignacion.FechaRetornoEstimada <= DateTime.Now)
             {
-                return Result.Failure(VehiculoErrors.NoOperativo(asignacion.VehiculoId, estado));
+                return Result.Failure(AsignacionErrors.RetornoVencido(asignacion.FechaRetornoEstimada));
             }
 
-            var ocupado = await uow.VehiculoOcupadoAsync(
-                asignacion.VehiculoId, asignacion.FechaSalida, asignacion.FechaRetornoEstimada,
-                asignacion.Id, DateTime.Now, cancellationToken);
-
-            if (ocupado)
-            {
-                return Result.Failure(AsignacionErrors.VehiculoOcupado(asignacion.VehiculoId));
-            }
+            // El vehículo pudo entrar al taller, asignarse o darse de baja mientras la solicitud estaba pendiente.
+            var disponible = await uow.ValidarAsignacionAsync(
+                asignacion.VehiculoId, asignacion.ChoferPersonaId, asignacion.FechaSalida, asignacion.FechaRetornoEstimada,
+                asignacion.Id, request.ConfirmarAdvertencias, cancellationToken);
+            if (disponible.IsFailure) return disponible;
 
             return asignacion.Aprobar(currentUser.UserId ?? Guid.Empty, DateTime.Now);
         }, cancellationToken);

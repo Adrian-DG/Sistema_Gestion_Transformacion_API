@@ -52,11 +52,25 @@ namespace API.Controllers
                 : HandleFailure(result);
         }
 
+        /// <summary>
+        /// Advertencias para asignar el vehículo en el período: solicitud de taller pendiente y póliza vencida o
+        /// que vence durante la asignación. Se deben confirmar al registrar o aprobar.
+        /// </summary>
+        [HttpGet("advertencias")]
+        [AppAuthorize(AppPolicy.CanVerAsignaciones)]
+        public async Task<IActionResult> GetAdvertencias([FromQuery] Guid vehiculoId, [FromQuery] DateTime salida,
+            [FromQuery] DateTime retornoEstimado, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetAdvertenciasAsignacionQuery(vehiculoId, salida, retornoEstimado), cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Con advertencias pendientes responde 409 (Asignacion.RequiereConfirmacion) salvo <c>confirmar=true</c>.</summary>
         [HttpPost("{id:Guid}/aprobar")]
         [AppAuthorize(AppPolicy.CanAprobarAsignaciones)]
-        public async Task<IActionResult> Aprobar([FromRoute] Guid id, CancellationToken cancellationToken)
+        public async Task<IActionResult> Aprobar([FromRoute] Guid id, [FromQuery] bool confirmar, CancellationToken cancellationToken)
         {
-            var result = await _mediator.Send(new AprobarAsignacionCommand(id), cancellationToken);
+            var result = await _mediator.Send(new AprobarAsignacionCommand(id, confirmar), cancellationToken);
             return HandleResult(result);
         }
 

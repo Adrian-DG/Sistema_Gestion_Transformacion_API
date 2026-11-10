@@ -11,6 +11,13 @@ public static class VehiculoErrors
         $"El vehículo con id '{id}' no está disponible para asignación.");
 
     /// <summary>El vehículo está en el taller o dado de baja; no se puede asignar.</summary>
+    public static Error NoOperativo(string placa, Enums.EstadoVehiculo estado) => Error.Conflict(
+        "Vehiculo.NoOperativo",
+        estado == Enums.EstadoVehiculo.Inactivo
+            ? $"El vehículo {placa} está dado de baja (inactivo) y no se puede asignar."
+            : $"El vehículo {placa} está en el taller y no se puede asignar hasta que salga. Elija otro vehículo.");
+
+    /// <summary>El vehículo está en el taller o dado de baja; no se puede asignar.</summary>
     public static Error NoOperativo(Guid id, Enums.EstadoVehiculo estado) => Error.Conflict(
         "Vehiculo.NoOperativo",
         estado == Enums.EstadoVehiculo.Inactivo
