@@ -21,4 +21,8 @@ public static class SolicitudTicketErrors
     public static Error TieneTicketsUtilizados(Guid id) => Error.Conflict(
         "SolicitudTicket.TieneTicketsUtilizados",
         $"La solicitud de tickets con id '{id}' no puede cancelarse porque tiene tickets utilizados.");
+
+    public static Error NoImprimible => Error.Conflict(
+        "SolicitudTicket.NoImprimible",
+        "Solo se imprimen los tickets de solicitudes aprobadas que aún tienen tickets disponibles.");
 }

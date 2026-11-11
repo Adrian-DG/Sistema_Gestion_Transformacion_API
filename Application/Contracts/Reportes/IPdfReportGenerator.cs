@@ -1,4 +1,4 @@
-using Application.Features.Configuracion;
+﻿using Application.Features.Configuracion;
 
 namespace Application.Contracts.Reportes;
 
@@ -10,7 +10,29 @@ public interface IPdfReportGenerator
     /// el logo predeterminado del sistema.
     /// </summary>
     byte[] ConstanciaAsignacion(DatosReportePdf encabezado, ConstanciaAsignacion datos);
+
+    /// <summary>
+    /// Tickets de una solicitud listos para recortar, cada uno con su código de barras (número y código
+    /// de verificación) para escanearlo en el despacho.
+    /// </summary>
+    byte[] TicketsCombustible(DatosReportePdf encabezado, TicketsImpresion datos);
 }
+
+/// <param name="CodigoBarras">Contenido del código de barras: número y código de verificación.</param>
+public record TicketImpresion(
+    string Numero,
+    string CodigoBarras,
+    string? CodigoVerificacion,
+    string TipoCombustible,
+    decimal Galones);
+
+public record TicketsImpresion(
+    string EntregadoA,
+    string? EntregadoACedula,
+    string Proposito,
+    DateTime? FechaAprobacion,
+    IReadOnlyList<TicketImpresion> Tickets,
+    DateTime Generado);
 
 public record PersonaConstancia(string Nombre, string Cedula, string? Rango);
 

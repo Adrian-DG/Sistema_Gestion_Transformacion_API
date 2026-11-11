@@ -1,6 +1,7 @@
 ﻿using Application.Common.DTO;
 using Application.Common.Response;
 using Application.Contracts;
+using Application.Contracts.Usuarios;
 using Domain.Common;
 using Domain.Common.Errors;
 using Domain.Entities.Combustible;
@@ -23,6 +24,39 @@ public class TicketViewModel
     public Guid SolicitudTicketId { get; set; }
     /// <summary>Cargo o persona a quien se entregó el ticket.</summary>
     public string? EntregadoA { get; set; }
+}
+
+/// <summary>Ticket leído en el despacho: lo necesario para que el operador confirme el canje.</summary>
+public class TicketDespachoViewModel
+{
+    public Guid Id { get; set; }
+    public required string Numero { get; set; }
+    public required string TipoCombustible { get; set; }
+    public decimal Galones { get; set; }
+    public required string Estatus { get; set; }
+    public string? EntregadoA { get; set; }
+    public string? Proposito { get; set; }
+    /// <summary>
+    /// El ticket tiene código de verificación y no se leyó (se escribió solo el número): hay que escanearlo
+    /// o escribir también el código.
+    /// </summary>
+    public bool RequiereCodigoVerificacion { get; set; }
+    public DateTime? FechaUso { get; set; }
+    public string? DespachadoPor { get; set; }
+    public string? ReceptorNombre { get; set; }
+}
+
+/// <summary>Ticket despachado (canjeado): cuándo, quién lo despachó y quién recibió el combustible.</summary>
+public class DespachoTicketViewModel
+{
+    public Guid MovimientoId { get; set; }
+    public required string Numero { get; set; }
+    public required string TipoCombustible { get; set; }
+    public decimal Galones { get; set; }
+    public DateTime FechaUso { get; set; }
+    public string? EntregadoA { get; set; }
+    public string? ReceptorNombre { get; set; }
+    public string? DespachadoPor { get; set; }
 }
 
 public class SolicitudTicketViewModel
@@ -48,6 +82,15 @@ public class SolicitudTicketViewModel
 
 public record GetTicketByNumeroQuery(string Numero) : IRequest<Result<TicketViewModel>>;
 
+/// <summary>
+/// Ticket por lo leído del código de barras (número y código de verificación) o por su número escrito.
+/// Si se leyó un código de verificación que no coincide, responde como no válido sin mostrar el ticket.
+/// </summary>
+public record GetTicketDespachoQuery(string Codigo) : IRequest<Result<TicketDespachoViewModel>>;
+
+/// <summary>Tickets despachados en el día indicado (hoy, si se omite), el más reciente primero.</summary>
+public record GetDespachosTicketQuery(DateTime? Fecha = null) : IRequest<Result<IReadOnlyList<DespachoTicketViewModel>>>;
+
 /// <summary>Listado de solicitudes de tickets con filtro opcional por estado.</summary>
 public record FiltroSolicitudesTicketQuery : PaginationFilterQuery<SolicitudTicketViewModel>
 {
@@ -69,8 +112,10 @@ public class FiltroSolicitudesTicketQueryValidator : AbstractValidator<FiltroSol
 /// </summary>
 public record GetSiguienteNumeroTicketQuery : IRequest<Result<string>>;
 
-public class GetTicketsQueryHandler(IUnitOfWork uow) :
+public class GetTicketsQueryHandler(IUnitOfWork uow, IUsuarioService usuarios) :
     IRequestHandler<GetTicketByNumeroQuery, Result<TicketViewModel>>,
+    IRequestHandler<GetTicketDespachoQuery, Result<TicketDespachoViewModel>>,
+    IRequestHandler<GetDespachosTicketQuery, Result<IReadOnlyList<DespachoTicketViewModel>>>,
     IRequestHandler<FiltroSolicitudesTicketQuery, Result<PagedData<SolicitudTicketViewModel>>>,
     IRequestHandler<GetSiguienteNumeroTicketQuery, Result<string>>
 {
@@ -83,6 +128,122 @@ public class GetTicketsQueryHandler(IUnitOfWork uow) :
             .FirstOrDefaultAsync(cancellationToken) ?? 0;
 
         return Result.Success(TicketCombustible.FormatearNumero(anio, ultimo + 1));
+    }
+
+    public async Task<Result<TicketDespachoViewModel>> Handle(GetTicketDespachoQuery request, CancellationToken cancellationToken)
+    {
+        var (numero, codigo) = TicketCombustible.InterpretarCodigo(request.Codigo);
+        var ticket = await uow.Query<TicketCombustible>()
+            .Where(t => t.Numero == numero)
+            // Si el número fue anulado y registrado de nuevo, se muestra el vigente.
+            .OrderBy(t => t.Estatus == EstatusTicket.Anulado)
+            .Select(t => new
+            {
+                t.Id,
+                t.Numero,
+                t.TipoCombustible,
+                t.Galones,
+                t.Estatus,
+                t.CodigoVerificacion,
+                t.FechaUso,
+                t.DespachadoPor,
+                EntregadoA = t.SolicitudTicket!.Cargo != null
+                    ? t.SolicitudTicket.Cargo
+                    : t.SolicitudTicket.Persona!.Apellido + " " + t.SolicitudTicket.Persona.Nombre,
+                t.SolicitudTicket.Proposito
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (ticket is null) return Result.Failure<TicketDespachoViewModel>(TicketCombustibleErrors.NotFound(numero));
+
+        // Un código leído que no coincide indica un ticket falso o alterado: no se muestran sus datos.
+        if (ticket.CodigoVerificacion is not null && codigo is not null &&
+            !string.Equals(ticket.CodigoVerificacion, codigo, StringComparison.OrdinalIgnoreCase))
+        {
+            return Result.Failure<TicketDespachoViewModel>(TicketCombustibleErrors.CodigoInvalido(numero));
+        }
+
+        string? despachadoPor = null;
+        string? receptor = null;
+        if (ticket.Estatus == EstatusTicket.Utilizado)
+        {
+            var canje = await uow.Query<MovimientoCombustible>()
+                .Where(m => m.TicketCombustibleId == ticket.Id && m.Status)
+                .Select(m => new
+                {
+                    m.CreatedBy,
+                    Receptor = m.ReceptorNombre ?? (m.ReceptorPersona != null
+                        ? m.ReceptorPersona.Apellido + " " + m.ReceptorPersona.Nombre
+                        : null)
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            receptor = canje?.Receptor;
+
+            // Los canjes anteriores a este módulo no guardaban el operador en el ticket.
+            if ((ticket.DespachadoPor ?? canje?.CreatedBy) is { } operador)
+            {
+                despachadoPor = (await usuarios.GetNombresAsync([operador], cancellationToken)).GetValueOrDefault(operador);
+            }
+        }
+
+        return Result.Success(new TicketDespachoViewModel
+        {
+            Id = ticket.Id,
+            Numero = ticket.Numero,
+            TipoCombustible = ticket.TipoCombustible.ToString(),
+            Galones = ticket.Galones,
+            Estatus = ticket.Estatus.ToString(),
+            EntregadoA = ticket.EntregadoA,
+            Proposito = ticket.Proposito,
+            RequiereCodigoVerificacion = ticket.CodigoVerificacion is not null && codigo is null,
+            FechaUso = ticket.FechaUso,
+            DespachadoPor = despachadoPor,
+            ReceptorNombre = receptor
+        });
+    }
+
+    public async Task<Result<IReadOnlyList<DespachoTicketViewModel>>> Handle(GetDespachosTicketQuery request, CancellationToken cancellationToken)
+    {
+        var desde = (request.Fecha ?? DateTime.Now).Date;
+        var hasta = desde.AddDays(1);
+
+        var despachos = await uow.Query<MovimientoCombustible>()
+            .Where(m => m.Status && m.Concepto == ConceptoMovimientoCombustible.Ticket &&
+                        m.Fecha >= desde && m.Fecha < hasta && m.TicketCombustibleId != null)
+            .OrderByDescending(m => m.Fecha)
+            .Select(m => new
+            {
+                m.Id,
+                m.TicketCombustible!.Numero,
+                m.TipoCombustible,
+                m.Galones,
+                m.Fecha,
+                EntregadoA = m.TicketCombustible.SolicitudTicket!.Cargo != null
+                    ? m.TicketCombustible.SolicitudTicket.Cargo
+                    : m.TicketCombustible.SolicitudTicket.Persona!.Apellido + " " + m.TicketCombustible.SolicitudTicket.Persona.Nombre,
+                ReceptorNombre = m.ReceptorNombre ?? (m.ReceptorPersona != null
+                    ? m.ReceptorPersona.Apellido + " " + m.ReceptorPersona.Nombre
+                    : null),
+                // Los canjes anteriores a este módulo no guardaban el operador en el ticket.
+                Operador = m.TicketCombustible.DespachadoPor ?? m.CreatedBy
+            })
+            .ToListAsync(cancellationToken);
+
+        var nombres = await usuarios.GetNombresAsync(despachos.Select(d => d.Operador).Distinct().ToList(), cancellationToken);
+
+        IReadOnlyList<DespachoTicketViewModel> data = despachos.Select(d => new DespachoTicketViewModel
+        {
+            MovimientoId = d.Id,
+            Numero = d.Numero,
+            TipoCombustible = d.TipoCombustible.ToString(),
+            Galones = d.Galones,
+            FechaUso = d.Fecha,
+            EntregadoA = d.EntregadoA,
+            ReceptorNombre = d.ReceptorNombre,
+            DespachadoPor = nombres.GetValueOrDefault(d.Operador)
+        }).ToList();
+
+        return Result.Success(data);
     }
 
     public async Task<Result<TicketViewModel>> Handle(GetTicketByNumeroQuery request, CancellationToken cancellationToken)

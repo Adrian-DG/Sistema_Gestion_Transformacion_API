@@ -1,4 +1,4 @@
-using Application.Contracts.Reportes;
+﻿using Application.Contracts.Reportes;
 using Application.Features.Configuracion;
 using Domain.Enums;
 using QuestPDF.Fluent;
@@ -38,6 +38,107 @@ namespace Infraestructure.Reportes
                     pagina.Footer().Element(c => Pie(c, encabezado.NotaPiePagina, d.Generado));
                 });
             }).GeneratePdf();
+        }
+
+        // ---------------- Tickets de combustible ----------------
+
+        /// <summary>Tickets por página: 2 columnas por 4 filas, con línea de corte punteada.</summary>
+        private const int ColumnasTickets = 2;
+
+        public byte[] TicketsCombustible(DatosReportePdf encabezado, TicketsImpresion d)
+        {
+            return Document.Create(documento =>
+            {
+                documento.Page(pagina =>
+                {
+                    pagina.Size(PageSizes.Letter);
+                    pagina.Margin(24);
+                    pagina.DefaultTextStyle(t => t.FontSize(8.5f).FontColor(ColorTexto));
+
+                    pagina.Content().Table(tabla =>
+                    {
+                        tabla.ColumnsDefinition(c =>
+                        {
+                            for (var i = 0; i < ColumnasTickets; i++) c.RelativeColumn();
+                        });
+
+                        foreach (var ticket in d.Tickets)
+                        {
+                            tabla.Cell().Padding(4).Element(c => Ticket(c, encabezado, d, ticket));
+                        }
+                    });
+
+                    pagina.Footer().Element(c => Pie(c, encabezado.NotaPiePagina, d.Generado));
+                });
+            }).GeneratePdf();
+        }
+
+        private static void Ticket(IContainer contenedor, DatosReportePdf e, TicketsImpresion d, TicketImpresion t)
+        {
+            contenedor
+                .Height(168)
+                // Línea de corte.
+                .Border(0.75f).BorderColor(ColorSecundario)
+                .Padding(8)
+                .Column(columna =>
+                {
+                    columna.Spacing(3);
+
+                    columna.Item().Row(fila =>
+                    {
+                        fila.ConstantItem(34).Height(28).Element(c => Logo(c, e, PosicionLogo.Izquierda, predeterminado: true));
+                        fila.RelativeItem().PaddingLeft(6).Column(texto =>
+                        {
+                            if (e.LineasEncabezado.FirstOrDefault() is { } institucion)
+                            {
+                                texto.Item().Text(institucion).SemiBold().FontSize(7.5f).FontColor(ColorSecundario);
+                            }
+                            texto.Item().Text(e.Titulo.ToUpper(Cultura)).Bold().FontSize(10).FontColor(ColorPrimario);
+                        });
+                        fila.AutoItem().AlignRight().Column(texto =>
+                        {
+                            texto.Item().AlignRight().Text(t.TipoCombustible.ToUpper(Cultura)).Bold().FontSize(11);
+                            texto.Item().AlignRight().Text($"{t.Galones.ToString("0.##", Cultura)} galones").SemiBold();
+                        });
+                    });
+
+                    columna.Item().LineHorizontal(0.75f).LineColor(ColorPrimario);
+
+                    columna.Item().Text(texto =>
+                    {
+                        texto.Span("Entregado a: ").FontColor(ColorSecundario);
+                        texto.Span(d.EntregadoACedula is null ? d.EntregadoA : $"{d.EntregadoA} ({d.EntregadoACedula})").SemiBold();
+                    });
+                    columna.Item().Text(texto =>
+                    {
+                        texto.Span("Propósito: ").FontColor(ColorSecundario);
+                        texto.Span(d.Proposito);
+                    });
+
+                    columna.Item().PaddingTop(4).Height(42).Svg(Code128.Svg(t.CodigoBarras)).FitArea();
+                    columna.Item().Row(fila =>
+                    {
+                        fila.RelativeItem().Text(t.Numero).Bold().FontSize(10).LetterSpacing(0.05f);
+                        if (t.CodigoVerificacion is not null)
+                        {
+                            fila.AutoItem().AlignRight().Text(texto =>
+                            {
+                                texto.Span("Verificación ").FontSize(7.5f).FontColor(ColorSecundario);
+                                texto.Span(t.CodigoVerificacion).Bold().FontSize(10).LetterSpacing(0.05f);
+                            });
+                        }
+                    });
+
+                    columna.Item().Text(texto =>
+                    {
+                        texto.DefaultTextStyle(s => s.FontSize(7).FontColor(ColorSecundario));
+                        texto.Span("Válido por un solo despacho. ");
+                        if (d.FechaAprobacion is { } aprobado)
+                        {
+                            texto.Span($"Aprobado el {aprobado.ToString("dd/MM/yyyy", Cultura)}.");
+                        }
+                    });
+                });
         }
 
         // ---------------- Encabezado ----------------

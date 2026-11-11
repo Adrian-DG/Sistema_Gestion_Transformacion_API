@@ -96,6 +96,7 @@ public class CreateSolicitudTicketCommandHandler(IUnitOfWork uow)
                 .Select(t => new TicketCombustible
                 {
                     Numero = TicketCombustible.FormatearNumero(anio, siguiente++),
+                    CodigoVerificacion = TicketCombustible.GenerarCodigoVerificacion(),
                     TipoCombustible = t.TipoCombustible,
                     Galones = t.Galones,
                     Estatus = EstatusTicket.Reservado,

@@ -1,4 +1,4 @@
-using Application.Contracts;
+﻿using Application.Contracts;
 using Application.Contracts.Reportes;
 using Application.Contracts.Usuarios;
 using Application.Features.Configuracion;
@@ -100,44 +100,9 @@ public class GetConstanciaAsignacionQueryHandler(
             a.MotivoRechazoCancelacion,
             DateTime.Now);
 
-        var encabezado = await EncabezadoAsync(cancellationToken);
+        var encabezado = await EncabezadoPdf.ObtenerAsync(mediator, uow, TipoReportePdf.AsignacionVehiculo, cancellationToken);
         var contenido = pdf.ConstanciaAsignacion(encabezado, datos);
         return Result.Success(new ArchivoReporte(contenido, $"Asignacion_{a.Vehiculo.Placa}_{datos.Referencia}.pdf"));
-    }
-
-    /// <summary>La plantilla predeterminada; sin ella, un encabezado con el título predeterminado.</summary>
-    private async Task<DatosReportePdf> EncabezadoAsync(CancellationToken cancellationToken)
-    {
-        var plantilla = await mediator.Send(new GetDatosReportePdfQuery(TipoReportePdf.AsignacionVehiculo), cancellationToken);
-        var encabezado = plantilla.IsSuccess
-            ? plantilla.Value
-            : new DatosReportePdf
-            {
-                Plantilla = "Predeterminada",
-                TipoReporte = TipoReportePdf.AsignacionVehiculo,
-                Titulo = TiposReportePdf.TituloPredeterminado(TipoReportePdf.AsignacionVehiculo)
-            };
-
-        // Sin logos en la plantilla se usa el de la organización (apariencia activa), si lo tiene.
-        if (encabezado.Logos.Count == 0)
-        {
-            var logo = await uow.Query<Apariencia>()
-                .Where(x => x.EsActiva && x.Logo != null)
-                .Select(x => new { x.Logo, x.LogoContentType })
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (logo?.Logo is { Length: > 0 } contenido)
-            {
-                encabezado.Logos.Add(new LogoReporte
-                {
-                    Posicion = PosicionLogo.Izquierda,
-                    ContentType = logo.LogoContentType ?? "image/png",
-                    Contenido = contenido
-                });
-            }
-        }
-
-        return encabezado;
     }
 
     private static string NombreEstatus(EstatusSolicitud estatus) => estatus switch

@@ -100,6 +100,7 @@ namespace Infraestructure.Data
             {
                 e.ToTable("Tickets", "combustible", t => t.HasCheckConstraint("CK_Tickets_Galones", "[Galones] > 0"));
                 e.Property(t => t.Galones).HasPrecision(10, 2);
+                e.Property(t => t.CodigoVerificacion).HasMaxLength(TicketCombustible.LongitudCodigoVerificacion).IsFixedLength();
                 // Los anulados quedan fuera del índice: los tickets pre-impresos anulados podían volver a registrarse.
                 e.HasIndex(t => t.Numero).IsUnique().HasFilter($"[Estatus] <> {(int)Domain.Enums.EstatusTicket.Anulado}");
             });

@@ -2,6 +2,7 @@
 using Application.Common.DTO;
 using Application.Features.Combustible.Movimientos;
 using Application.Features.Combustible.Tickets;
+using Application.Features.Reportes.Combustible;
 using Application.Features.Taller.Inventario;
 using Application.Security;
 using MediatR;
@@ -67,6 +68,29 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        /// <summary>
+        /// Detalle de la solicitud: a quién se asignó, galones por tipo de combustible y cada ticket con
+        /// su estado y, si se utilizó, la fecha y hora, el operador y quién recibió.
+        /// </summary>
+        [HttpGet("solicitudes-ticket/{id:Guid}")]
+        [AppAuthorize(AppPolicy.CanVerCombustible)]
+        public async Task<IActionResult> GetSolicitudTicket([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetSolicitudTicketDetalleQuery(id), cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Descarga un documento adjunto a una solicitud de tickets.</summary>
+        [HttpGet("adjuntos/{id:Guid}")]
+        [AppAuthorize(AppPolicy.CanVerCombustible)]
+        public async Task<IActionResult> GetAdjuntoSolicitudTicket([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetAdjuntoSolicitudTicketQuery(id), cancellationToken);
+            return result.IsSuccess
+                ? File(result.Value.Contenido, result.Value.ContentType, result.Value.NombreArchivo)
+                : HandleFailure(result);
+        }
+
         [HttpPost("solicitudes-ticket")]
         [AppAuthorize(AppPolicy.CanManageCombustible)]
         public async Task<IActionResult> CreateSolicitudTicket([FromBody] CreateSolicitudTicketCommand command, CancellationToken cancellationToken)
@@ -116,6 +140,55 @@ namespace API.Controllers
             return HandleResult(result);
         }
 
+        // Despacho: el operador escanea el ticket, revisa sus datos y confirma.
+
+        /// <summary>
+        /// Ticket por lo leído del código de barras (número y código de verificación) o por su número.
+        /// Por query string: el lector puede enviar separadores que no van en una ruta.
+        /// </summary>
+        [HttpGet("tickets/despacho")]
+        [AppAuthorize(AppPolicy.CanDespacharCombustible)]
+        public async Task<IActionResult> GetTicketDespacho([FromQuery] string codigo, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetTicketDespachoQuery(codigo), cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Despacha el ticket con la fecha y hora del servidor y el usuario actual como operador.</summary>
+        [HttpPost("tickets/despachar")]
+        [AppAuthorize(AppPolicy.CanDespacharCombustible)]
+        public async Task<IActionResult> DespacharTicket([FromBody] DespacharTicketRequest request, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(
+                new UtilizarTicketCommand(request.Codigo, null, request.ReceptorPersonaId, request.ReceptorNombre),
+                cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>Tickets despachados en el día (hoy, si no se indica la fecha).</summary>
+        [HttpGet("despachos-ticket")]
+        [AppAuthorize(AppPolicy.CanDespacharCombustible)]
+        public async Task<IActionResult> GetDespachosTicket([FromQuery] DateTime? fecha, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetDespachosTicketQuery(fecha), cancellationToken);
+            return HandleResult(result);
+        }
+
+        /// <summary>PDF con los tickets disponibles de una solicitud aprobada, con su código de barras.</summary>
+        [HttpGet("solicitudes-ticket/{id:Guid}/tickets-pdf")]
+        [AppAuthorize(AppPolicy.CanManageCombustible)]
+        public async Task<IActionResult> ImprimirTickets([FromRoute] Guid id, CancellationToken cancellationToken)
+        {
+            var result = await _mediator.Send(new GetTicketsImpresionQuery(id), cancellationToken);
+            return result.IsSuccess
+                ? File(result.Value.Contenido, "application/pdf", result.Value.NombreArchivo)
+                : HandleFailure(result);
+        }
+
+        /// <summary>
+        /// Registra un canje con otra fecha (ej. uno que no se pudo escanear en el momento).
+        /// <paramref name="numero"/> debe incluir el código de verificación si el ticket lo tiene.
+        /// </summary>
         [HttpPost("tickets/{numero}/utilizar")]
         [AppAuthorize(AppPolicy.CanDespacharCombustible)]
         public async Task<IActionResult> UtilizarTicket([FromRoute] string numero, [FromBody] UtilizarTicketRequest request, CancellationToken cancellationToken)
@@ -128,4 +201,6 @@ namespace API.Controllers
     }
 
     public record UtilizarTicketRequest(DateTime? FechaUso, Guid? ReceptorPersonaId, string? ReceptorNombre);
+
+    public record DespacharTicketRequest(string Codigo, Guid? ReceptorPersonaId = null, string? ReceptorNombre = null);
 }

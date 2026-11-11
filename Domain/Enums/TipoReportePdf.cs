@@ -9,7 +9,9 @@
         OperacionesCombustible = 1,
         Asignaciones = 2,
         /// <summary>Constancia de una asignación de vehículo (un documento por asignación).</summary>
-        AsignacionVehiculo = 3
+        AsignacionVehiculo = 3,
+        /// <summary>Tickets de combustible impresos con su código de barras (un documento por solicitud).</summary>
+        TicketsCombustible = 4
     }
 
     public static class TiposReportePdf
@@ -19,6 +21,7 @@
             TipoReportePdf.OperacionesCombustible => "Operaciones de combustible",
             TipoReportePdf.Asignaciones => "Asignaciones de vehículos",
             TipoReportePdf.AsignacionVehiculo => "Constancia de asignación de vehículo",
+            TipoReportePdf.TicketsCombustible => "Tickets de combustible",
             _ => tipo.ToString()
         };
 
@@ -27,6 +30,7 @@
             TipoReportePdf.OperacionesCombustible => "Reporte de operaciones de combustible",
             TipoReportePdf.Asignaciones => "Reporte de asignaciones de vehículos",
             TipoReportePdf.AsignacionVehiculo => "Constancia de asignación de vehículo",
+            TipoReportePdf.TicketsCombustible => "Ticket de combustible",
             _ => tipo.ToString()
         };
     }
